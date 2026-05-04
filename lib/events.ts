@@ -1,0 +1,143 @@
+import { createAdminSupabaseClient } from "./supabase/server";
+import type { Event, EventFilters } from "@/types";
+
+// Fields to select for event cards (list views)
+const EVENT_CARD_SELECT = `
+  id, title, slug, short_description, start_date, end_date,
+  is_free, price_range, banner_url, featured, is_recurring, recurrence_note,
+  category:categories(id, name, slug, icon, color),
+  neighborhood:neighborhoods(id, name, slug),
+  venue:venues(id, name, city)
+`;
+
+// Fields to select for full event detail pages
+const EVENT_DETAIL_SELECT = `
+  *,
+  category:categories(id, name, slug, icon, color),
+  neighborhood:neighborhoods(id, name, slug),
+  venue:venues(id, name, address, city, state, lat, lng, website)
+`;
+
+export async function getFeaturedEvents(): Promise<Event[]> {
+  const supabase = createAdminSupabaseClient();
+  const { data } = await supabase
+    .from("events")
+    .select(EVENT_CARD_SELECT)
+    .eq("status", "published")
+    .eq("featured", true)
+    .gte("start_date", new Date().toISOString())
+    .order("start_date", { ascending: true })
+    .limit(4);
+
+  return (data as Event[]) ?? [];
+}
+
+export async function getUpcomingEvents({
+  limit = 8,
+}: { limit?: number } = {}): Promise<Event[]> {
+  const supabase = createAdminSupabaseClient();
+  const { data } = await supabase
+    .from("events")
+    .select(EVENT_CARD_SELECT)
+    .eq("status", "published")
+    .gte("start_date", new Date().toISOString())
+    .order("start_date", { ascending: true })
+    .limit(limit);
+
+  return (data as Event[]) ?? [];
+}
+
+export async function getPublishedEvents(filters: EventFilters = {}): Promise<Event[]> {
+  const supabase = createAdminSupabaseClient();
+
+  let query = supabase
+    .from("events")
+    .select(EVENT_CARD_SELECT)
+    .eq("status", "published")
+    .gte("start_date", new Date().toISOString())
+    .order("start_date", { ascending: true });
+
+  if (filters.freeOnly) {
+    query = query.eq("is_free", true);
+  }
+
+  if (filters.query) {
+    // Postgres full-text search on title and description
+    query = query.textSearch("title", filters.query, { type: "websearch" });
+  }
+
+  if (filters.dateFilter) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    switch (filters.dateFilter) {
+      case "today": {
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        query = query
+          .gte("start_date", today.toISOString())
+          .lt("start_date", tomorrow.toISOString());
+        break;
+      }
+      case "this-weekend": {
+        const dayOfWeek = today.getDay(); // 0 = Sun, 6 = Sat
+        const daysUntilSat = (6 - dayOfWeek + 7) % 7 || 7;
+        const saturday = new Date(today);
+        saturday.setDate(today.getDate() + daysUntilSat);
+        const monday = new Date(saturday);
+        monday.setDate(saturday.getDate() + 2);
+        query = query
+          .gte("start_date", saturday.toISOString())
+          .lt("start_date", monday.toISOString());
+        break;
+      }
+      case "this-week": {
+        const endOfWeek = new Date(today);
+        endOfWeek.setDate(today.getDate() + 7);
+        query = query
+          .gte("start_date", today.toISOString())
+          .lt("start_date", endOfWeek.toISOString());
+        break;
+      }
+      case "this-month": {
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        query = query
+          .gte("start_date", today.toISOString())
+          .lt("start_date", endOfMonth.toISOString());
+        break;
+      }
+    }
+  }
+
+  const { data } = await query.limit(filters.limit ?? 50);
+  return (data as Event[]) ?? [];
+}
+
+export async function getEventBySlug(slug: string): Promise<Event | null> {
+  const supabase = createAdminSupabaseClient();
+  const { data } = await supabase
+    .from("events")
+    .select(EVENT_DETAIL_SELECT)
+    .eq("slug", slug)
+    .eq("status", "published")
+    .single();
+
+  return (data as Event) ?? null;
+}
+
+export async function getRelatedEvents(event: Event): Promise<Event[]> {
+  if (!event.category_id) return [];
+
+  const supabase = createAdminSupabaseClient();
+  const { data } = await supabase
+    .from("events")
+    .select(EVENT_CARD_SELECT)
+    .eq("status", "published")
+    .eq("category_id", event.category_id)
+    .neq("id", event.id)
+    .gte("start_date", new Date().toISOString())
+    .order("start_date", { ascending: true })
+    .limit(3);
+
+  return (data as Event[]) ?? [];
+}
