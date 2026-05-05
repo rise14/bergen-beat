@@ -18,6 +18,16 @@ const EVENT_DETAIL_SELECT = `
   venue:venues(id, name, address, city, state, lat, lng, website)
 `;
 
+// Supabase returns partial rows and arrays for joined relations.
+// We cast through unknown to avoid TypeScript fighting us over the shape.
+function asEvents(data: unknown): Event[] {
+  return (data as Event[]) ?? [];
+}
+
+function asEvent(data: unknown): Event | null {
+  return (data as Event) ?? null;
+}
+
 export async function getFeaturedEvents(): Promise<Event[]> {
   const supabase = createAdminSupabaseClient();
   const { data } = await supabase
@@ -29,7 +39,7 @@ export async function getFeaturedEvents(): Promise<Event[]> {
     .order("start_date", { ascending: true })
     .limit(4);
 
-  return (data as Event[]) ?? [];
+  return asEvents(data);
 }
 
 export async function getUpcomingEvents({
@@ -44,7 +54,7 @@ export async function getUpcomingEvents({
     .order("start_date", { ascending: true })
     .limit(limit);
 
-  return (data as Event[]) ?? [];
+  return asEvents(data);
 }
 
 export async function getPublishedEvents(filters: EventFilters = {}): Promise<Event[]> {
@@ -62,7 +72,6 @@ export async function getPublishedEvents(filters: EventFilters = {}): Promise<Ev
   }
 
   if (filters.query) {
-    // Postgres full-text search on title and description
     query = query.textSearch("title", filters.query, { type: "websearch" });
   }
 
@@ -80,7 +89,7 @@ export async function getPublishedEvents(filters: EventFilters = {}): Promise<Ev
         break;
       }
       case "this-weekend": {
-        const dayOfWeek = today.getDay(); // 0 = Sun, 6 = Sat
+        const dayOfWeek = today.getDay();
         const daysUntilSat = (6 - dayOfWeek + 7) % 7 || 7;
         const saturday = new Date(today);
         saturday.setDate(today.getDate() + daysUntilSat);
@@ -110,7 +119,7 @@ export async function getPublishedEvents(filters: EventFilters = {}): Promise<Ev
   }
 
   const { data } = await query.limit(filters.limit ?? 50);
-  return (data as Event[]) ?? [];
+  return asEvents(data);
 }
 
 export async function getEventBySlug(slug: string): Promise<Event | null> {
@@ -122,7 +131,7 @@ export async function getEventBySlug(slug: string): Promise<Event | null> {
     .eq("status", "published")
     .single();
 
-  return (data as Event) ?? null;
+  return asEvent(data);
 }
 
 export async function getRelatedEvents(event: Event): Promise<Event[]> {
@@ -139,5 +148,5 @@ export async function getRelatedEvents(event: Event): Promise<Event[]> {
     .order("start_date", { ascending: true })
     .limit(3);
 
-  return (data as Event[]) ?? [];
+  return asEvents(data);
 }

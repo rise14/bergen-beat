@@ -7,7 +7,7 @@ export async function getNeighborhoods(): Promise<Neighborhood[]> {
     .from("neighborhoods")
     .select("*")
     .order("name", { ascending: true });
-  return (data as Neighborhood[]) ?? [];
+  return (data as unknown as Neighborhood[]) ?? [];
 }
 
 export async function getNeighborhoodBySlug(slug: string): Promise<Neighborhood | null> {
@@ -17,5 +17,5 @@ export async function getNeighborhoodBySlug(slug: string): Promise<Neighborhood 
     .select("*")
     .eq("slug", slug)
     .single();
-  return (data as Neighborhood) ?? null;
+  return (data as unknown as Neighborhood) ?? null;
 }

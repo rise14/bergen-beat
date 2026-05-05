@@ -7,7 +7,7 @@ export async function getCategories(): Promise<Category[]> {
     .from("categories")
     .select("*")
     .order("sort_order", { ascending: true });
-  return (data as Category[]) ?? [];
+  return (data as unknown as Category[]) ?? [];
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
@@ -17,5 +17,5 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
     .select("*")
     .eq("slug", slug)
     .single();
-  return (data as Category) ?? null;
+  return (data as unknown as Category) ?? null;
 }
