@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { EventFilters } from "@/types";
 import { EventGrid } from "@/components/EventGrid";
 import { FilterBar } from "@/components/FilterBar";
 import { getPublishedEvents } from "@/lib/events";
@@ -30,7 +31,7 @@ export default async function EventsPage({ searchParams }: Props) {
     getPublishedEvents({
       categorySlug: searchParams.category,
       neighborhoodSlug: searchParams.neighborhood,
-      dateFilter: searchParams.date,
+      dateFilter: searchParams.date as EventFilters["dateFilter"],
       freeOnly: searchParams.free === "true",
       query: searchParams.q,
     }),
