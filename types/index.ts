@@ -55,7 +55,8 @@ export interface Event {
   organizer_name: string | null;
   organizer_email: string | null;
   featured: boolean;
-  source: "admin" | "submission";
+  source: "admin" | "submission" | "eventbrite" | "predicthq";
+  external_id: string | null;    // external API event ID for deduplication
   submission_id: UUID | null;
   published_at: string | null;
   created_at: string;
@@ -96,6 +97,45 @@ export interface NewsletterSubscriber {
   email: string;
   confirmed: boolean;
   subscribed_at: string;
+}
+
+// ─── Import log — tracks events pulled from external APIs ────────────────────
+
+export type ImportSource = "eventbrite" | "predicthq";
+
+export interface ImportLog {
+  id: UUID;
+  source: ImportSource;
+  external_id: string;
+  event_id: UUID | null;
+  status: "imported" | "skipped" | "error";
+  raw_data: Record<string, unknown> | null;
+  imported_at: string;
+}
+
+// ─── Normalised event shape returned by importers before DB insert ────────────
+
+export interface ImportedEvent {
+  title: string;
+  short_description: string | null;
+  description: string | null;
+  start_date: string;
+  end_date: string | null;
+  is_free: boolean;
+  price_range: string | null;
+  external_url: string | null;
+  banner_url: string | null;
+  organizer_name: string | null;
+  source: ImportSource;
+  external_id: string;
+  venue: {
+    name: string;
+    address: string | null;
+    city: string | null;
+    lat: number | null;
+    lng: number | null;
+  } | null;
+  category_guess: string | null;  // category name hint for auto-matching
 }
 
 // ─── Filter params used on the /events browse page ───────────────────────────

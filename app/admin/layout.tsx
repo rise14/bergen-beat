@@ -9,6 +9,7 @@ export default function AdminLayout({
     { href: "/admin/submissions", label: "Submissions" },
     { href: "/admin/events", label: "Events" },
     { href: "/admin/events/new", label: "＋ New Event" },
+    { href: "/admin/import", label: "Import Events" },
   ];
 
   return (

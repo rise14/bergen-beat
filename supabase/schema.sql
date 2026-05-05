@@ -108,7 +108,8 @@ create table if not exists events (
   organizer_email     text,
   featured            boolean     not null default false,
   source              text        not null default 'admin'
-                        check (source in ('admin', 'submission')),
+                        check (source in ('admin', 'submission', 'eventbrite', 'predicthq')),
+  external_id         text,       -- external API event ID for deduplication
   submission_id       uuid,       -- set when promoted from event_submissions
   published_at        timestamptz,
   created_at          timestamptz not null default now(),
@@ -224,6 +225,31 @@ alter table event_tags enable row level security;
 
 create policy "tags_public_read"        on tags        for select using (true);
 create policy "event_tags_public_read"  on event_tags  for select using (true);
+
+
+-- ============================================================
+-- IMPORT LOG
+-- Tracks every event fetched from external APIs so we never
+-- create duplicates.  One row per (source, external_id) pair.
+-- ============================================================
+
+create table if not exists import_log (
+  id            uuid        primary key default gen_random_uuid(),
+  source        text        not null check (source in ('eventbrite', 'predicthq')),
+  external_id   text        not null,
+  event_id      uuid        references events (id) on delete set null,
+  status        text        not null default 'imported'
+                              check (status in ('imported', 'skipped', 'error')),
+  raw_data      jsonb,
+  imported_at   timestamptz not null default now(),
+  unique (source, external_id)
+);
+
+alter table import_log enable row level security;
+-- No public access; only service role reads/writes import_log
+
+create index import_log_source_idx on import_log (source);
+create index import_log_imported_at_idx on import_log (imported_at desc);
 
 
 -- ============================================================
