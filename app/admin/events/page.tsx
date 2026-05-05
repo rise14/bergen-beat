@@ -20,7 +20,7 @@ export default async function AdminEventsPage() {
     .select("id, title, slug, status, start_date, featured, category:categories(name)")
     .order("start_date", { ascending: true });
 
-  const events = (data ?? []) as EventRow[];
+  const events = (data ?? []) as unknown as EventRow[];
 
   return (
     <>
