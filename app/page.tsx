@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   title: "Bergen Beat — Events in Bergen County, NJ",
 };
 
-// Revalidate the homepage every hour
-export const revalidate = 3600;
+// Revalidate the homepage every 5 minutes
+export const revalidate = 300;
 
 export default async function HomePage() {
   const [featuredEvents, upcomingEvents, categories] = await Promise.all([
