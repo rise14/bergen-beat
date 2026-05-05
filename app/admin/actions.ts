@@ -282,3 +282,48 @@ export async function rejectSubmission(formData: FormData) {
   revalidatePath("/admin/submissions");
   redirect("/admin/submissions?rejected=1");
 }
+
+// ─── Bulk publish ─────────────────────────────────────────────────────────────
+
+export async function bulkPublishEvents(ids: string[]): Promise<{ count: number }> {
+  if (!ids.length) return { count: 0 };
+
+  const supabase = createAdminSupabaseClient();
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("events")
+    .update({ status: "published", published_at: now })
+    .in("id", ids)
+    .eq("status", "draft")   // only promote drafts, never touch already-published
+    .select("id");
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/events");
+  revalidatePath("/");
+  revalidatePath("/events");
+
+  return { count: data?.length ?? 0 };
+}
+
+// ─── Bulk delete (drafts only) ────────────────────────────────────────────────
+
+export async function bulkDeleteDraftEvents(ids: string[]): Promise<{ count: number }> {
+  if (!ids.length) return { count: 0 };
+
+  const supabase = createAdminSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("events")
+    .delete()
+    .in("id", ids)
+    .eq("status", "draft")   // safety: never bulk-delete published events
+    .select("id");
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/events");
+
+  return { count: data?.length ?? 0 };
+}

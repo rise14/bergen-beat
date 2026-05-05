@@ -108,7 +108,7 @@ create table if not exists events (
   organizer_email     text,
   featured            boolean     not null default false,
   source              text        not null default 'admin'
-                        check (source in ('admin', 'submission', 'eventbrite', 'predicthq')),
+                        check (source in ('admin', 'submission', 'ticketmaster', 'predicthq')),
   external_id         text,       -- external API event ID for deduplication
   submission_id       uuid,       -- set when promoted from event_submissions
   published_at        timestamptz,
@@ -235,7 +235,7 @@ create policy "event_tags_public_read"  on event_tags  for select using (true);
 
 create table if not exists import_log (
   id            uuid        primary key default gen_random_uuid(),
-  source        text        not null check (source in ('eventbrite', 'predicthq')),
+  source        text        not null check (source in ('ticketmaster', 'predicthq')),
   external_id   text        not null,
   event_id      uuid        references events (id) on delete set null,
   status        text        not null default 'imported'

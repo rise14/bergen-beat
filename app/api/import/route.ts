@@ -2,15 +2,11 @@
  * POST /api/import
  *
  * Triggers an import from a given source.
- * Body: { source: "eventbrite" | "predicthq", autoPublish?: boolean }
- *
- * Protected: only callable from the admin UI (checks for a simple server-side
- * secret header rather than a full auth session, since this is a server action
- * alternative for long-running work).
+ * Body: { source: "ticketmaster" | "predicthq", autoPublish?: boolean }
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { fetchEventbriteEvents } from "@/lib/importers/eventbrite";
+import { fetchTicketmasterEvents } from "@/lib/importers/ticketmaster";
 import { fetchPredictHQEvents } from "@/lib/importers/predicthq";
 import { saveImportedEvents } from "@/lib/importers/save";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -35,17 +31,17 @@ export async function POST(req: NextRequest) {
 
   const { source, autoPublish = false } = body;
 
-  if (source !== "eventbrite" && source !== "predicthq") {
+  if (source !== "ticketmaster" && source !== "predicthq") {
     return NextResponse.json(
-      { error: 'source must be "eventbrite" or "predicthq"' },
+      { error: 'source must be "ticketmaster" or "predicthq"' },
       { status: 400 }
     );
   }
 
   try {
     const events =
-      source === "eventbrite"
-        ? await fetchEventbriteEvents()
+      source === "ticketmaster"
+        ? await fetchTicketmasterEvents()
         : await fetchPredictHQEvents();
 
     const result = await saveImportedEvents(events, autoPublish);

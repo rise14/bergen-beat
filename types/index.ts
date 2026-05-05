@@ -55,7 +55,7 @@ export interface Event {
   organizer_name: string | null;
   organizer_email: string | null;
   featured: boolean;
-  source: "admin" | "submission" | "eventbrite" | "predicthq";
+  source: "admin" | "submission" | "ticketmaster" | "predicthq";
   external_id: string | null;    // external API event ID for deduplication
   submission_id: UUID | null;
   published_at: string | null;
@@ -101,7 +101,7 @@ export interface NewsletterSubscriber {
 
 // ─── Import log — tracks events pulled from external APIs ────────────────────
 
-export type ImportSource = "eventbrite" | "predicthq";
+export type ImportSource = "ticketmaster" | "predicthq";
 
 export interface ImportLog {
   id: UUID;

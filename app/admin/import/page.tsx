@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-type ImportSource = "eventbrite" | "predicthq";
+type ImportSource = "ticketmaster" | "predicthq";
 
 interface ImportResult {
   success: boolean;
@@ -16,25 +16,23 @@ interface ImportResult {
   error?: string;
 }
 
-const SOURCES: { id: ImportSource; label: string; description: string; color: string }[] = [
+const SOURCES: { id: ImportSource; label: string; description: string }[] = [
   {
-    id: "eventbrite",
-    label: "Eventbrite",
-    description: "Pulls public events from Eventbrite within 25 km of Bergen County center.",
-    color: "orange",
+    id: "ticketmaster",
+    label: "Ticketmaster",
+    description: "Pulls concerts, sports, and shows from Ticketmaster within 15 miles of Bergen County. Best for large ticketed events.",
   },
   {
     id: "predicthq",
     label: "PredictHQ",
-    description: "Pulls concerts, festivals, sports, and community events within 15 miles of Bergen County.",
-    color: "indigo",
+    description: "Pulls festivals, community events, performing arts, and more within 15 miles of Bergen County.",
   },
 ];
 
 export default function ImportPage() {
   const [loading, setLoading] = useState<ImportSource | null>(null);
   const [results, setResults] = useState<Record<ImportSource, ImportResult | null>>({
-    eventbrite: null,
+    ticketmaster: null,
     predicthq: null,
   });
   const [autoPublish, setAutoPublish] = useState(false);
@@ -231,20 +229,21 @@ export default function ImportPage() {
           (and to Vercel environment variables):
         </p>
         <pre className="mt-3 overflow-x-auto rounded-lg bg-gray-900 p-4 text-xs text-gray-200">
-          {`EVENTBRITE_API_KEY=your_eventbrite_private_token
+          {`TICKETMASTER_API_KEY=your_ticketmaster_consumer_key
 PREDICTHQ_ACCESS_TOKEN=your_predicthq_access_token`}
         </pre>
         <div className="mt-4 space-y-2 text-sm text-gray-600">
           <p>
-            <span className="font-medium">Eventbrite:</span> Get a private token at{" "}
+            <span className="font-medium">Ticketmaster:</span> Create a free app at{" "}
             <a
-              href="https://www.eventbrite.com/platform/api-keys"
+              href="https://developer.ticketmaster.com/products-and-docs/apis/getting-started/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-brand-600 hover:underline"
             >
-              eventbrite.com/platform/api-keys
-            </a>
+              developer.ticketmaster.com
+            </a>{" "}
+            — copy the <strong>Consumer Key</strong> from your app dashboard.
           </p>
           <p>
             <span className="font-medium">PredictHQ:</span> Sign up and generate a token at{" "}
