@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchTicketmasterEvents } from "@/lib/importers/ticketmaster";
 import { fetchPredictHQEvents } from "@/lib/importers/predicthq";
+import { enrichWithImages } from "@/lib/importers/images";
 import { saveImportedEvents } from "@/lib/importers/save";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -39,10 +40,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const events =
+    const rawEvents =
       source === "ticketmaster"
         ? await fetchTicketmasterEvents()
         : await fetchPredictHQEvents();
+
+    // Fill in missing banner images from Unsplash (no-op if UNSPLASH_ACCESS_KEY not set)
+    const events = await enrichWithImages(rawEvents);
 
     const result = await saveImportedEvents(events, autoPublish);
 
