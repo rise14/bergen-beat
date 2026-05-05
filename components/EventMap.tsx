@@ -22,7 +22,6 @@ export function EventMap({ lat, lng, label }: Props) {
     }
 
     import("mapbox-gl").then((mapboxgl) => {
-      import("mapbox-gl/dist/mapbox-gl.css");
 
       mapboxgl.default.accessToken = token;
 
