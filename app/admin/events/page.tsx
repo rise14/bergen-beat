@@ -38,7 +38,7 @@ export default async function AdminEventsPage() {
               <tr key={event.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium text-gray-900">{event.title}</td>
                 <td className="px-4 py-3 text-gray-500">
-                  {(event.category as { name: string } | null)?.name ?? "—"}
+                  {((event.category as unknown) as { name: string } | null)?.name ?? "—"}
                 </td>
                 <td className="px-4 py-3 text-gray-500">
                   {formatEventDate(event.start_date)}
