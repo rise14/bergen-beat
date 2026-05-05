@@ -1,13 +1,26 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { formatEventDate } from "@/lib/dates";
 
+// Explicit type for the query result avoids Supabase join inference issues
+type EventRow = {
+  id: string;
+  title: string;
+  slug: string;
+  status: string;
+  start_date: string;
+  featured: boolean;
+  category: { name: string } | null;
+};
+
 export default async function AdminEventsPage() {
   const supabase = createAdminSupabaseClient();
 
-  const { data: events } = await supabase
+  const { data } = await supabase
     .from("events")
     .select("id, title, slug, status, start_date, featured, category:categories(name)")
     .order("start_date", { ascending: true });
+
+  const events = (data ?? []) as EventRow[];
 
   return (
     <>
@@ -34,11 +47,11 @@ export default async function AdminEventsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {events?.map((event) => (
+            {events.map((event) => (
               <tr key={event.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium text-gray-900">{event.title}</td>
                 <td className="px-4 py-3 text-gray-500">
-                  {((event.category as unknown) as { name: string } | null)?.name ?? "—"}
+                  {event.category?.name ?? "—"}
                 </td>
                 <td className="px-4 py-3 text-gray-500">
                   {formatEventDate(event.start_date)}
@@ -72,7 +85,7 @@ export default async function AdminEventsPage() {
           </tbody>
         </table>
 
-        {!events?.length && (
+        {events.length === 0 && (
           <div className="py-12 text-center text-gray-400">
             No events yet.{" "}
             <a href="/admin/events/new" className="text-brand-600 hover:underline">
