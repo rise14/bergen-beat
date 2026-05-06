@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 // Temporary debug endpoint — DELETE THIS FILE after fixing the issue
 export async function GET() {
   const checks: Record<string, unknown> = {};
@@ -9,6 +11,12 @@ export async function GET() {
   checks.NEXT_PUBLIC_SUPABASE_URL = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
   checks.NEXT_PUBLIC_SUPABASE_ANON_KEY = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   checks.SUPABASE_SERVICE_ROLE_KEY = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  // Show first/last 6 chars of the key so we can verify it's the right one
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  checks.key_preview = key.length > 12
+    ? `${key.slice(0, 6)}...${key.slice(-6)} (${key.length} chars)`
+    : `too short (${key.length} chars)`;
 
   // Try fetching events
   try {
@@ -32,5 +40,7 @@ export async function GET() {
 
   checks.server_time = new Date().toISOString();
 
-  return NextResponse.json(checks);
+  return NextResponse.json(checks, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }
