@@ -31,8 +31,12 @@ export default function RootLayout({
       <body>
         <header className="border-b border-gray-100 bg-white">
           <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
-            <a href="/" className="text-xl font-bold tracking-tight text-brand-700">
-              Bergen Beat
+            <a href="/" className="flex items-center">
+              <img
+                src="/bergen-beat-logo.png"
+                alt="Bergen Beat"
+                className="h-8 w-auto"
+              />
             </a>
             <nav className="flex items-center gap-6 text-sm text-gray-600">
               <a href="/events" className="hover:text-brand-600">Events</a>
