@@ -6,10 +6,14 @@ import { getPublishedEvents } from "@/lib/events";
 import { getCategories } from "@/lib/categories";
 import { getNeighborhoods } from "@/lib/neighborhoods";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+
 export const metadata: Metadata = {
   title: "All Events",
   description:
     "Browse all upcoming events in Bergen County, NJ. Filter by category, neighborhood, date, and more.",
+  alternates: { canonical: `${siteUrl}/events` },
+  openGraph: { url: `${siteUrl}/events` },
 };
 
 export const revalidate = 3600;

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getEventBySlug, getRelatedEvents } from "@/lib/events";
-import { buildEventJsonLd } from "@/lib/seo";
+import { buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
 import { AddToCalendar } from "@/components/AddToCalendar";
@@ -19,13 +19,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const event = await getEventBySlug(params.slug);
   if (!event) return {};
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+  const canonicalUrl = `${siteUrl}/events/${event.slug}`;
+
   return {
     title: event.title,
     description: event.short_description ?? event.description?.slice(0, 155),
+    alternates: { canonical: canonicalUrl },
     openGraph: {
       title: event.title,
       description: event.short_description ?? undefined,
-      images: event.banner_url ? [{ url: event.banner_url }] : [],
+      url: canonicalUrl,
+      images: event.banner_url
+        ? [{ url: event.banner_url, width: 1200, height: 630, alt: event.title }]
+        : [],
     },
   };
 }
@@ -36,6 +43,11 @@ export default async function EventPage({ params }: Props) {
 
   const relatedEvents = await getRelatedEvents(event);
   const jsonLd = buildEventJsonLd(event);
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", href: "/" },
+    { name: "Events", href: "/events" },
+    { name: event.title, href: `/events/${event.slug}` },
+  ]);
 
   return (
     <>
@@ -43,6 +55,10 @@ export default async function EventPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
       {/* Banner */}

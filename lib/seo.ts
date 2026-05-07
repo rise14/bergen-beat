@@ -2,8 +2,10 @@ import type { Event } from "@/types";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
 
-// Build a JSON-LD Event schema object for Google's event rich results.
-// See: https://developers.google.com/search/docs/appearance/structured-data/event
+// ─── Event JSON-LD ────────────────────────────────────────────────────────────
+// Build a JSON-LD Event schema for Google's event rich results.
+// https://developers.google.com/search/docs/appearance/structured-data/event
+
 export function buildEventJsonLd(event: Event): Record<string, unknown> {
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -71,4 +73,48 @@ export function buildEventJsonLd(event: Event): Record<string, unknown> {
   }
 
   return jsonLd;
+}
+
+// ─── BreadcrumbList JSON-LD ───────────────────────────────────────────────────
+// https://developers.google.com/search/docs/appearance/structured-data/breadcrumb
+
+interface BreadcrumbItem {
+  name: string;
+  href: string;
+}
+
+export function buildBreadcrumbJsonLd(items: BreadcrumbItem[]): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: `${siteUrl}${item.href}`,
+    })),
+  };
+}
+
+// ─── WebSite JSON-LD ──────────────────────────────────────────────────────────
+// Enables Google Sitelinks Searchbox and declares the site entity.
+// https://developers.google.com/search/docs/appearance/structured-data/sitelinks-searchbox
+
+export function buildWebSiteJsonLd(): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Bergen Beat",
+    url: siteUrl,
+    description:
+      "Discover the best local events in Bergen County, NJ — concerts, markets, festivals, food events, and more.",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${siteUrl}/events?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
 }

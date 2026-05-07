@@ -307,6 +307,18 @@ export async function bulkPublishEvents(ids: string[]): Promise<{ count: number 
   return { count: data?.length ?? 0 };
 }
 
+// ─── Delete subscriber ────────────────────────────────────────────────────────
+
+export async function deleteSubscriber(id: string): Promise<void> {
+  const supabase = createAdminSupabaseClient();
+  const { error } = await supabase
+    .from("newsletter_subscribers")
+    .delete()
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/subscribers");
+}
+
 // ─── Archive past events ──────────────────────────────────────────────────────
 
 export async function archivePastEvents(): Promise<{ count: number }> {

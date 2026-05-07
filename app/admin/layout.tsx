@@ -10,6 +10,7 @@ export default function AdminLayout({
     { href: "/admin/events", label: "Events" },
     { href: "/admin/events/new", label: "＋ New Event" },
     { href: "/admin/import", label: "Import Events" },
+    { href: "/admin/subscribers", label: "Subscribers" },
   ];
 
   return (

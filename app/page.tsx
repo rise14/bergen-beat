@@ -5,9 +5,14 @@ import { CategoryPill } from "@/components/CategoryPill";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { getFeaturedEvents, getUpcomingEvents, getPublishedEvents } from "@/lib/events";
 import { getCategories } from "@/lib/categories";
+import { buildWebSiteJsonLd } from "@/lib/seo";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
 
 export const metadata: Metadata = {
   title: "Bergen Beat — Events in Bergen County, NJ",
+  alternates: { canonical: siteUrl },
+  openGraph: { url: siteUrl },
 };
 
 // Revalidate the homepage every 5 minutes
@@ -50,8 +55,15 @@ export default async function HomePage({ searchParams }: Props) {
 
   const sectionLabel = isFiltered ? SECTION_LABELS[activeDate!] ?? "Events" : "Coming up";
 
+  const websiteJsonLd = buildWebSiteJsonLd();
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+
       {/* Hero */}
       <section className="py-12 text-center">
         <h1 className="flex justify-center">
