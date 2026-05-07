@@ -48,7 +48,7 @@ export default async function HomePage({ searchParams }: Props) {
   const [featuredEvents, browseEvents, categories] = await Promise.all([
     getFeaturedEvents(),
     isFiltered
-      ? getPublishedEvents({ dateFilter: activeDate as EventFilters["dateFilter"], limit: 12 })
+      ? getPublishedEvents({ dateFilter: activeDate as EventFilters["dateFilter"], limit: 12 }).then((r) => r.events)
       : getUpcomingEvents({ limit: 8 }),
     getCategories(),
   ]);

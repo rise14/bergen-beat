@@ -38,7 +38,7 @@ export default async function NeighborhoodPage({ params }: Props) {
   const neighborhood = await getNeighborhoodBySlug(params.slug);
   if (!neighborhood) notFound();
 
-  const events = await getPublishedEvents({ neighborhoodSlug: params.slug });
+  const { events } = await getPublishedEvents({ neighborhoodSlug: params.slug });
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: "Home", href: "/" },

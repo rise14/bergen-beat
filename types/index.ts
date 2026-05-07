@@ -147,4 +147,14 @@ export interface EventFilters {
   freeOnly?: boolean;
   query?: string;
   limit?: number;
+  page?: number;      // 1-based
+  pageSize?: number;  // defaults to PAGE_SIZE in lib/events.ts
+}
+
+export interface PaginatedEvents {
+  events: Event[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }

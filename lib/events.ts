@@ -1,5 +1,7 @@
 import { createAdminSupabaseClient } from "./supabase/server";
-import type { Event, EventFilters } from "@/types";
+import type { Event, EventFilters, PaginatedEvents } from "@/types";
+
+export const PAGE_SIZE = 24;
 
 // Fields to select for event cards (list views)
 const EVENT_CARD_SELECT = `
@@ -57,12 +59,18 @@ export async function getUpcomingEvents({
   return asEvents(data);
 }
 
-export async function getPublishedEvents(filters: EventFilters = {}): Promise<Event[]> {
+export async function getPublishedEvents(
+  filters: EventFilters = {}
+): Promise<PaginatedEvents> {
   const supabase = createAdminSupabaseClient();
+  const pageSize = filters.pageSize ?? PAGE_SIZE;
+  const page = Math.max(1, filters.page ?? 1);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
   let query = supabase
     .from("events")
-    .select(EVENT_CARD_SELECT)
+    .select(EVENT_CARD_SELECT, { count: "exact" })
     .eq("status", "published")
     .gte("start_date", new Date().toISOString())
     .order("start_date", { ascending: true });
@@ -74,7 +82,7 @@ export async function getPublishedEvents(filters: EventFilters = {}): Promise<Ev
       .eq("slug", filters.categorySlug)
       .single();
     if (cat) query = query.eq("category_id", cat.id);
-    else return []; // unknown slug → no results
+    else return { events: [], total: 0, page, pageSize, totalPages: 0 };
   }
 
   if (filters.neighborhoodSlug) {
@@ -84,7 +92,7 @@ export async function getPublishedEvents(filters: EventFilters = {}): Promise<Ev
       .eq("slug", filters.neighborhoodSlug)
       .single();
     if (nb) query = query.eq("neighborhood_id", nb.id);
-    else return []; // unknown slug → no results
+    else return { events: [], total: 0, page, pageSize, totalPages: 0 };
   }
 
   if (filters.freeOnly) {
@@ -138,8 +146,22 @@ export async function getPublishedEvents(filters: EventFilters = {}): Promise<Ev
     }
   }
 
-  const { data } = await query.limit(filters.limit ?? 50);
-  return asEvents(data);
+  // If a legacy `limit` override is set (homepage snippets etc.) skip pagination
+  if (filters.limit) {
+    const { data } = await query.limit(filters.limit);
+    const events = asEvents(data);
+    return { events, total: events.length, page: 1, pageSize: filters.limit, totalPages: 1 };
+  }
+
+  const { data, count } = await query.range(from, to);
+  const total = count ?? 0;
+  return {
+    events: asEvents(data),
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
 }
 
 export async function getEventBySlug(slug: string): Promise<Event | null> {

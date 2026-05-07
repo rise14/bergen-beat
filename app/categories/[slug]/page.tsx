@@ -38,7 +38,7 @@ export default async function CategoryPage({ params }: Props) {
   const category = await getCategoryBySlug(params.slug);
   if (!category) notFound();
 
-  const events = await getPublishedEvents({ categorySlug: params.slug });
+  const { events } = await getPublishedEvents({ categorySlug: params.slug });
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: "Home", href: "/" },

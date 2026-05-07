@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { EventFilters } from "@/types";
 import { EventGrid } from "@/components/EventGrid";
 import { FilterBar } from "@/components/FilterBar";
+import { Pagination } from "@/components/Pagination";
 import { getPublishedEvents } from "@/lib/events";
 import { getCategories } from "@/lib/categories";
 import { getNeighborhoods } from "@/lib/neighborhoods";
@@ -16,14 +17,16 @@ export const metadata: Metadata = {
   openGraph: { url: `${siteUrl}/events` },
 };
 
-export const revalidate = 3600;
+// Dynamic — searchParams vary per request
+export const dynamic = "force-dynamic";
 
 interface SearchParams {
   category?: string;
   neighborhood?: string;
-  date?: string;       // "today" | "this-weekend" | "this-week" | "this-month"
-  free?: string;       // "true"
-  q?: string;          // search query
+  date?: string;
+  free?: string;
+  q?: string;
+  page?: string;
 }
 
 interface Props {
@@ -31,24 +34,42 @@ interface Props {
 }
 
 export default async function EventsPage({ searchParams }: Props) {
-  const [events, categories, neighborhoods] = await Promise.all([
+  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
+
+  const [result, categories, neighborhoods] = await Promise.all([
     getPublishedEvents({
-      categorySlug: searchParams.category,
+      categorySlug:     searchParams.category,
       neighborhoodSlug: searchParams.neighborhood,
-      dateFilter: searchParams.date as EventFilters["dateFilter"],
-      freeOnly: searchParams.free === "true",
-      query: searchParams.q,
+      dateFilter:       searchParams.date as EventFilters["dateFilter"],
+      freeOnly:         searchParams.free === "true",
+      query:            searchParams.q,
+      page,
     }),
     getCategories(),
     getNeighborhoods(),
   ]);
+
+  const { events, total, totalPages, pageSize } = result;
+
+  // Build a URL for a given page, preserving all other search params
+  function buildHref(p: number): string {
+    const params = new URLSearchParams();
+    if (searchParams.category)     params.set("category",     searchParams.category);
+    if (searchParams.neighborhood) params.set("neighborhood", searchParams.neighborhood);
+    if (searchParams.date)         params.set("date",         searchParams.date);
+    if (searchParams.free)         params.set("free",         searchParams.free);
+    if (searchParams.q)            params.set("q",            searchParams.q);
+    if (p > 1)                     params.set("page",         String(p));
+    const qs = params.toString();
+    return `/events${qs ? `?${qs}` : ""}`;
+  }
 
   return (
     <>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Events in Bergen County</h1>
         <p className="mt-2 text-gray-500">
-          {events.length} event{events.length !== 1 ? "s" : ""} found
+          {total} event{total !== 1 ? "s" : ""} found
         </p>
       </div>
 
@@ -60,7 +81,16 @@ export default async function EventsPage({ searchParams }: Props) {
 
       <div className="mt-8">
         {events.length > 0 ? (
-          <EventGrid events={events} />
+          <>
+            <EventGrid events={events} />
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              pageSize={pageSize}
+              buildHref={buildHref}
+            />
+          </>
         ) : (
           <div className="py-16 text-center text-gray-400">
             <p className="text-lg">No events match your filters.</p>
