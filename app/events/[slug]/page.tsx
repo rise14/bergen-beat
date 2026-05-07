@@ -5,6 +5,7 @@ import { buildEventJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
 import { AddToCalendar } from "@/components/AddToCalendar";
+import { ShareButtons } from "@/components/ShareButtons";
 import { formatEventDate, formatEventTime } from "@/lib/dates";
 
 // Revalidate event pages every hour
@@ -147,6 +148,12 @@ export default async function EventPage({ params }: Props) {
 
           {/* Add to calendar */}
           <AddToCalendar event={event} />
+
+          {/* Share */}
+          <ShareButtons
+            url={`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net"}/events/${event.slug}`}
+            title={event.title}
+          />
 
           {/* Map */}
           {event.venue?.lat && event.venue?.lng && (
