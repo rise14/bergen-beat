@@ -152,11 +152,13 @@ export function AdminEventsTable({ events }: Props) {
             {events.map((event) => {
               const isDraft = event.status === "draft";
               const isSelected = selected.has(event.id);
+              const effectiveEnd = event.end_date ?? event.start_date;
+              const isPast = new Date(effectiveEnd) < new Date();
 
               return (
                 <tr
                   key={event.id}
-                  className={`hover:bg-gray-50 ${isSelected ? "bg-brand-50" : ""}`}
+                  className={`hover:bg-gray-50 ${isSelected ? "bg-brand-50" : ""} ${isPast && event.status !== "archived" ? "opacity-60" : ""}`}
                 >
                   <td className="px-4 py-3">
                     {isDraft && (
@@ -169,7 +171,12 @@ export function AdminEventsTable({ events }: Props) {
                     )}
                   </td>
                   <td className="px-4 py-3 font-medium text-gray-900">
-                    {event.title}
+                    <span>{event.title}</span>
+                    {isPast && event.status !== "archived" && (
+                      <span className="ml-2 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-400">
+                        past
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-gray-500">
                     {event.category?.name ?? "—"}
@@ -189,7 +196,7 @@ export function AdminEventsTable({ events }: Props) {
                           ? "bg-green-100 text-green-700"
                           : event.status === "draft"
                           ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-600"
+                          : "bg-gray-100 text-gray-500"
                       }`}
                     >
                       {event.status}

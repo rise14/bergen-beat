@@ -307,6 +307,42 @@ export async function bulkPublishEvents(ids: string[]): Promise<{ count: number 
   return { count: data?.length ?? 0 };
 }
 
+// ─── Archive past events ──────────────────────────────────────────────────────
+
+export async function archivePastEvents(): Promise<{ count: number }> {
+  const supabase = createAdminSupabaseClient();
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const now = new Date().toISOString();
+
+  const [{ data: d1, error: e1 }, { data: d2, error: e2 }] = await Promise.all([
+    // Events with an end_date past the cutoff
+    supabase
+      .from("events")
+      .update({ status: "archived", updated_at: now })
+      .eq("status", "published")
+      .lt("end_date", cutoff)
+      .select("id"),
+    // Events with no end_date whose start_date is past the cutoff
+    supabase
+      .from("events")
+      .update({ status: "archived", updated_at: now })
+      .eq("status", "published")
+      .is("end_date", null)
+      .lt("start_date", cutoff)
+      .select("id"),
+  ]);
+
+  if (e1) throw new Error(e1.message);
+  if (e2) throw new Error(e2.message);
+
+  const count = (d1?.length ?? 0) + (d2?.length ?? 0);
+
+  revalidatePath("/admin/events");
+  revalidatePath("/admin");
+
+  return { count };
+}
+
 // ─── Bulk delete (drafts only) ────────────────────────────────────────────────
 
 export async function bulkDeleteDraftEvents(ids: string[]): Promise<{ count: number }> {
