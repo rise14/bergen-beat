@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SiteHeader } from "@/components/SiteHeader";
 
 export const metadata: Metadata = {
   title: {
@@ -32,25 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <header className="border-b border-gray-100 bg-white">
-          <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
-            <a href="/" className="flex items-center">
-              <img
-                src="/bergen-beat-logo.png"
-                alt="Bergen Beat"
-                className="h-8 w-auto"
-              />
-            </a>
-            <nav className="flex items-center gap-6 text-sm text-gray-600">
-              <a href="/events" className="hover:text-brand-600">Events</a>
-              <a href="/categories" className="hover:text-brand-600">Categories</a>
-              <a href="/neighborhoods" className="hover:text-brand-600">Neighborhoods</a>
-              <a href="/submit" className="rounded-lg bg-brand-600 px-4 py-1.5 text-white hover:bg-brand-700">
-                Submit an Event
-              </a>
-            </nav>
-          </div>
-        </header>
+        <SiteHeader />
 
         <main className="mx-auto max-w-6xl px-4 py-8">
           {children}
