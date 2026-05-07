@@ -65,6 +65,105 @@ async function resolveVenueId(
   return created ? (created.id as string) : null;
 }
 
+// Maps venue city names → Bergen Beat neighborhood slugs.
+// Cities not listed here are outside Bergen County and get no neighborhood tag.
+const CITY_TO_NEIGHBORHOOD: Record<string, string> = {
+  // Direct matches
+  "hackensack":     "hackensack",
+  "ridgewood":      "ridgewood",
+  "paramus":        "paramus",
+  "fort lee":       "fort-lee",
+  "teaneck":        "teaneck",
+  "englewood":      "englewood",
+  "bergenfield":    "bergenfield",
+  "closter":        "closter",
+  "mahwah":         "mahwah",
+  "ramsey":         "ramsey",
+  "westwood":       "westwood",
+  "oradell":        "oradell",
+  // Other Bergen County municipalities → "other"
+  "alpine":         "other",
+  "bogota":         "other",
+  "carlstadt":      "other",
+  "cresskill":      "other",
+  "demarest":       "other",
+  "dumont":         "other",
+  "east rutherford":"other",
+  "edgewater":      "other",
+  "elmwood park":   "other",
+  "emerson":        "other",
+  "fair lawn":      "other",
+  "fairview":       "other",
+  "franklin lakes": "other",
+  "garfield":       "other",
+  "glen rock":      "other",
+  "harrington park":"other",
+  "hasbrouck heights":"other",
+  "haworth":        "other",
+  "hillsdale":      "other",
+  "ho-ho-kus":      "other",
+  "hohokus":        "other",
+  "leonia":         "other",
+  "little ferry":   "other",
+  "lodi":           "other",
+  "lyndhurst":      "other",
+  "maywood":        "other",
+  "midland park":   "other",
+  "montvale":       "other",
+  "moonachie":      "other",
+  "new milford":    "other",
+  "north arlington":"other",
+  "northvale":      "other",
+  "norwood":        "other",
+  "oakland":        "other",
+  "old tappan":     "other",
+  "palisades park": "other",
+  "park ridge":     "other",
+  "river edge":     "other",
+  "river vale":     "other",
+  "rochelle park":  "other",
+  "rockleigh":      "other",
+  "rutherford":     "other",
+  "saddle brook":   "other",
+  "saddle river":   "other",
+  "south hackensack":"other",
+  "tenafly":        "other",
+  "teterboro":      "other",
+  "upper saddle river":"other",
+  "waldwick":       "other",
+  "wallington":     "other",
+  "washington township":"other",
+  "wood-ridge":     "other",
+  "woodcliff lake": "other",
+  "woodridge":      "other",
+  "wyckoff":        "other",
+};
+
+// Neighbourhood ID cache — avoids repeated DB lookups for the same slug
+const neighborhoodIdCache = new Map<string, string | null>();
+
+async function resolveNeighborhoodId(
+  supabase: ReturnType<typeof createAdminSupabaseClient>,
+  city: string | null | undefined
+): Promise<string | null> {
+  if (!city) return null;
+
+  const slug = CITY_TO_NEIGHBORHOOD[city.toLowerCase().trim()];
+  if (!slug) return null; // city not in Bergen County
+
+  if (neighborhoodIdCache.has(slug)) return neighborhoodIdCache.get(slug)!;
+
+  const { data } = await supabase
+    .from("neighborhoods")
+    .select("id")
+    .eq("slug", slug)
+    .single();
+
+  const id = data ? (data.id as string) : null;
+  neighborhoodIdCache.set(slug, id);
+  return id;
+}
+
 async function resolveCategoryId(
   supabase: ReturnType<typeof createAdminSupabaseClient>,
   categoryGuess: string | null
@@ -112,7 +211,10 @@ export async function saveImportedEvents(
       // 2. Resolve venue
       const venueId = await resolveVenueId(supabase, event.venue);
 
-      // 3. Resolve category
+      // 3. Resolve neighborhood from venue city
+      const neighborhoodId = await resolveNeighborhoodId(supabase, event.venue?.city);
+
+      // 4. Resolve category
       const categoryId = await resolveCategoryId(supabase, event.category_guess);
 
       // 4. Build a unique slug
@@ -144,6 +246,7 @@ export async function saveImportedEvents(
           source: event.source,
           external_id: event.external_id,
           venue_id: venueId,
+          neighborhood_id: neighborhoodId,
           category_id: categoryId,
           status: autoPublish ? "published" : "draft",
           published_at: autoPublish ? new Date().toISOString() : null,
