@@ -67,6 +67,26 @@ export async function getPublishedEvents(filters: EventFilters = {}): Promise<Ev
     .gte("start_date", new Date().toISOString())
     .order("start_date", { ascending: true });
 
+  if (filters.categorySlug) {
+    const { data: cat } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("slug", filters.categorySlug)
+      .single();
+    if (cat) query = query.eq("category_id", cat.id);
+    else return []; // unknown slug → no results
+  }
+
+  if (filters.neighborhoodSlug) {
+    const { data: nb } = await supabase
+      .from("neighborhoods")
+      .select("id")
+      .eq("slug", filters.neighborhoodSlug)
+      .single();
+    if (nb) query = query.eq("neighborhood_id", nb.id);
+    else return []; // unknown slug → no results
+  }
+
   if (filters.freeOnly) {
     query = query.eq("is_free", true);
   }

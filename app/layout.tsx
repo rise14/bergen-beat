@@ -40,7 +40,11 @@ export default function RootLayout({
             </a>
             <nav className="flex items-center gap-6 text-sm text-gray-600">
               <a href="/events" className="hover:text-brand-600">Events</a>
-              <a href="/submit" className="hover:text-brand-600">Submit an Event</a>
+              <a href="/categories" className="hover:text-brand-600">Categories</a>
+              <a href="/neighborhoods" className="hover:text-brand-600">Neighborhoods</a>
+              <a href="/submit" className="rounded-lg bg-brand-600 px-4 py-1.5 text-white hover:bg-brand-700">
+                Submit an Event
+              </a>
             </nav>
           </div>
         </header>
@@ -53,6 +57,9 @@ export default function RootLayout({
           <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-gray-500 flex flex-col sm:flex-row justify-between gap-4">
             <p>© {new Date().getFullYear()} Bergen Beat. Events in Bergen County, NJ.</p>
             <nav className="flex gap-4">
+              <a href="/events" className="hover:text-brand-600">Events</a>
+              <a href="/categories" className="hover:text-brand-600">Categories</a>
+              <a href="/neighborhoods" className="hover:text-brand-600">Neighborhoods</a>
               <a href="/submit" className="hover:text-brand-600">Submit Event</a>
             </nav>
           </div>
