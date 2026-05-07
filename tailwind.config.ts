@@ -9,14 +9,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Bergen Beat brand palette — update as design evolves
+        // Bergen Beat brand palette
         brand: {
-          50:  "#f0f9ff",
-          100: "#e0f2fe",
-          500: "#0ea5e9",
-          600: "#0284c7",
-          700: "#0369a1",
-          900: "#0c4a6e",
+          50:  "#f0f2fb",  // very light tint of primary
+          100: "#dde2f4",  // light tint
+          500: "#5f6aa8",  // medium blue-purple
+          600: "#3355ba",  // primary
+          700: "#2845a0",  // hover / darker primary
+          900: "#192a5e",  // deep dark
+        },
+        // Warm accent palette
+        accent: {
+          mauve:  "#897993",
+          rose:   "#b28579",
+          orange: "#dc8f53",
         },
       },
       fontFamily: {

@@ -33,7 +33,7 @@ export function EventMap({ lat, lng, label }: Props) {
         interactive: false,
       });
 
-      new mapboxgl.default.Marker({ color: "#0284c7" })
+      new mapboxgl.default.Marker({ color: "#3355ba" })
         .setLngLat([lng, lat])
         .addTo(map);
 
