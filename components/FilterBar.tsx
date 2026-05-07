@@ -3,6 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useRef } from "react";
 import type { Category, Neighborhood } from "@/types";
+import { NearMeButton } from "@/components/NearMeButton";
 
 interface Props {
   categories: Category[];
@@ -13,6 +14,8 @@ interface Props {
     date?: string;
     free?: string;
     q?: string;
+    lat?: string;
+    lng?: string;
   };
 }
 
@@ -56,7 +59,8 @@ export function FilterBar({ categories, neighborhoods, currentFilters }: Props) 
     currentFilters.neighborhood ||
     currentFilters.date ||
     currentFilters.free ||
-    currentFilters.q;
+    currentFilters.q ||
+    currentFilters.lat;
 
   return (
     <div className="space-y-3">
@@ -142,6 +146,9 @@ export function FilterBar({ categories, neighborhoods, currentFilters }: Props) 
           />
           Free only
         </label>
+
+        {/* Near me */}
+        <NearMeButton active={!!currentFilters.lat} />
 
         {/* Clear filters */}
         {hasFilters && (

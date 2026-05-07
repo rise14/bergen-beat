@@ -147,8 +147,11 @@ export interface EventFilters {
   freeOnly?: boolean;
   query?: string;
   limit?: number;
-  page?: number;      // 1-based
-  pageSize?: number;  // defaults to PAGE_SIZE in lib/events.ts
+  page?: number;         // 1-based
+  pageSize?: number;     // defaults to PAGE_SIZE in lib/events.ts
+  userLat?: number;      // near-me filter
+  userLng?: number;
+  radiusMiles?: number;  // defaults to DEFAULT_RADIUS_MILES
 }
 
 export interface PaginatedEvents {

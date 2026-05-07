@@ -27,6 +27,9 @@ interface SearchParams {
   free?: string;
   q?: string;
   page?: string;
+  lat?: string;
+  lng?: string;
+  radius?: string;
 }
 
 interface Props {
@@ -36,6 +39,10 @@ interface Props {
 export default async function EventsPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
 
+  const userLat = searchParams.lat ? parseFloat(searchParams.lat) : undefined;
+  const userLng = searchParams.lng ? parseFloat(searchParams.lng) : undefined;
+  const radiusMiles = searchParams.radius ? parseFloat(searchParams.radius) : undefined;
+
   const [result, categories, neighborhoods] = await Promise.all([
     getPublishedEvents({
       categorySlug:     searchParams.category,
@@ -44,6 +51,9 @@ export default async function EventsPage({ searchParams }: Props) {
       freeOnly:         searchParams.free === "true",
       query:            searchParams.q,
       page,
+      userLat,
+      userLng,
+      radiusMiles,
     }),
     getCategories(),
     getNeighborhoods(),
@@ -59,6 +69,9 @@ export default async function EventsPage({ searchParams }: Props) {
     if (searchParams.date)         params.set("date",         searchParams.date);
     if (searchParams.free)         params.set("free",         searchParams.free);
     if (searchParams.q)            params.set("q",            searchParams.q);
+    if (searchParams.lat)          params.set("lat",          searchParams.lat);
+    if (searchParams.lng)          params.set("lng",          searchParams.lng);
+    if (searchParams.radius)       params.set("radius",       searchParams.radius);
     if (p > 1)                     params.set("page",         String(p));
     const qs = params.toString();
     return `/events${qs ? `?${qs}` : ""}`;

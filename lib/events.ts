@@ -1,5 +1,6 @@
 import { createAdminSupabaseClient } from "./supabase/server";
 import type { Event, EventFilters, PaginatedEvents } from "@/types";
+import { haversineDistance, withinBoundingBox, DEFAULT_RADIUS_MILES } from "./geo";
 
 export const PAGE_SIZE = 24;
 
@@ -9,7 +10,7 @@ const EVENT_CARD_SELECT = `
   is_free, price_range, banner_url, featured, is_recurring, recurrence_note,
   category:categories(id, name, slug, icon, color),
   neighborhood:neighborhoods(id, name, slug),
-  venue:venues(id, name, city)
+  venue:venues(id, name, city, lat, lng)
 `;
 
 // Fields to select for full event detail pages
@@ -144,6 +145,36 @@ export async function getPublishedEvents(
         break;
       }
     }
+  }
+
+  // ── Near-me filter ─────────────────────────────────────────────────────────
+  // Geolocation can't be done at DB level without PostGIS, so we fetch a larger
+  // slice, filter + sort by distance in JS, then manually paginate.
+  if (filters.userLat != null && filters.userLng != null) {
+    const { userLat, userLng } = filters;
+    const radius = filters.radiusMiles ?? DEFAULT_RADIUS_MILES;
+
+    const { data } = await query.limit(1000); // fetch wide; Bergen County is small
+    const all = asEvents(data)
+      .filter((e) => {
+        const v = e.venue as (typeof e.venue & { lat?: number; lng?: number }) | null;
+        if (!v?.lat || !v?.lng) return false;
+        return withinBoundingBox(userLat, userLng, v.lat, v.lng, radius);
+      })
+      .map((e) => {
+        const v = e.venue as (typeof e.venue & { lat?: number; lng?: number }) | null;
+        const dist = v?.lat && v?.lng
+          ? haversineDistance(userLat, userLng, v.lat, v.lng)
+          : Infinity;
+        return { event: e, dist };
+      })
+      .filter(({ dist }) => dist <= radius)
+      .sort((a, b) => a.dist - b.dist)
+      .map(({ event }) => event);
+
+    const total = all.length;
+    const sliced = all.slice(from, from + pageSize);
+    return { events: sliced, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 
   // If a legacy `limit` override is set (homepage snippets etc.) skip pagination
