@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import type { Category, Neighborhood, Event } from "@/types";
 
 interface Props {
@@ -14,6 +14,14 @@ interface Props {
   action: (formData: FormData) => Promise<void>;
   saved?: boolean;
   created?: boolean;
+}
+
+interface DuplicateHit {
+  id: string;
+  title: string;
+  slug: string;
+  start_date: string;
+  status: string;
 }
 
 const inputClass =
@@ -52,6 +60,41 @@ export function EventForm({
   const isEdit = Boolean(initialValues.id);
   const formRef = useRef<HTMLFormElement>(null);
 
+  // ── Duplicate detection state ──────────────────────────────────────────────
+  const [title, setTitle] = useState(initialValues.title ?? "");
+  const [startDate, setStartDate] = useState(initialValues.start_date?.slice(0, 16) ?? "");
+
+  // ── Banner preview state ───────────────────────────────────────────────────
+  const [bannerUrl, setBannerUrl] = useState(initialValues.banner_url ?? "");
+  const [bannerError, setBannerError] = useState(false);
+  const [duplicates, setDuplicates] = useState<DuplicateHit[]>([]);
+  const [dismissedDupes, setDismissedDupes] = useState(false);
+
+  const checkDuplicates = useCallback(async (t: string, d: string) => {
+    if (t.trim().length < 4) {
+      setDuplicates([]);
+      return;
+    }
+    const params = new URLSearchParams({ title: t, date: d });
+    if (initialValues.id) params.set("excludeId", initialValues.id);
+    try {
+      const res = await fetch(`/api/admin/check-duplicate?${params.toString()}`);
+      const json = await res.json();
+      setDuplicates(json.duplicates ?? []);
+    } catch {
+      // silently ignore — duplicate check is advisory only
+    }
+  }, [initialValues.id]);
+
+  // Debounce: wait 600 ms after the last keystroke before hitting the API
+  useEffect(() => {
+    setDismissedDupes(false);
+    const timer = setTimeout(() => checkDuplicates(title, startDate), 600);
+    return () => clearTimeout(timer);
+  }, [title, startDate, checkDuplicates]);
+
+  const showDupeWarning = duplicates.length > 0 && !dismissedDupes;
+
   return (
     <form ref={formRef} action={action} className="space-y-8 max-w-2xl">
 
@@ -62,6 +105,45 @@ export function EventForm({
         </div>
       )}
 
+      {/* Duplicate warning */}
+      {showDupeWarning && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-medium">Possible duplicate{duplicates.length > 1 ? "s" : ""} detected</p>
+              <ul className="mt-1.5 space-y-1">
+                {duplicates.map((d) => (
+                  <li key={d.id}>
+                    <a
+                      href={`/admin/events/${d.id}/edit`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-amber-900"
+                    >
+                      {d.title}
+                    </a>
+                    {" — "}
+                    {new Date(d.start_date).toLocaleDateString("en-US", {
+                      month: "short", day: "numeric", year: "numeric",
+                    })}
+                    {" "}
+                    <span className="text-amber-600">({d.status})</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDismissedDupes(true)}
+              className="shrink-0 text-amber-500 hover:text-amber-700"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Basic info ─────────────────────────────────────────── */}
       <section className="space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
@@ -69,9 +151,12 @@ export function EventForm({
         </h2>
 
         <Field label="Title *" htmlFor="title">
-          <input id="title" name="title" type="text" required
-            defaultValue={initialValues.title}
-            className={inputClass} />
+          <input
+            id="title" name="title" type="text" required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className={inputClass}
+          />
         </Field>
 
         <Field label="Slug *" htmlFor="slug"
@@ -99,6 +184,33 @@ export function EventForm({
           <input id="external_url" name="external_url" type="url"
             defaultValue={initialValues.external_url ?? ""}
             className={inputClass} />
+        </Field>
+
+        <Field label="Banner image URL" htmlFor="banner_url"
+          hint="Paste a direct image URL (JPEG/PNG/WebP). Use the upload tool on the submit form for new uploads.">
+          <input
+            id="banner_url" name="banner_url" type="url"
+            value={bannerUrl}
+            onChange={(e) => { setBannerUrl(e.target.value); setBannerError(false); }}
+            placeholder="https://example.com/image.jpg"
+            className={inputClass}
+          />
+          {bannerUrl && !bannerError && (
+            <div className="mt-2 overflow-hidden rounded-lg border border-gray-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={bannerUrl}
+                alt="Banner preview"
+                className="max-h-48 w-full object-cover"
+                onError={() => setBannerError(true)}
+              />
+            </div>
+          )}
+          {bannerUrl && bannerError && (
+            <p className="mt-1 text-xs text-red-500">
+              Couldn&apos;t load image — check the URL is a direct link to an image file.
+            </p>
+          )}
         </Field>
       </section>
 
@@ -139,9 +251,12 @@ export function EventForm({
         </h2>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Start *" htmlFor="start_date">
-            <input id="start_date" name="start_date" type="datetime-local" required
-              defaultValue={initialValues.start_date?.slice(0, 16)}
-              className={inputClass} />
+            <input
+              id="start_date" name="start_date" type="datetime-local" required
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className={inputClass}
+            />
           </Field>
           <Field label="End" htmlFor="end_date">
             <input id="end_date" name="end_date" type="datetime-local"

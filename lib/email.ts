@@ -10,6 +10,45 @@ function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
 }
 
+// ─── Newsletter double opt-in ─────────────────────────────────────────────────
+
+export async function sendSubscribeConfirmation({
+  to,
+  token,
+}: {
+  to: string;
+  token: string;
+}) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+  const confirmUrl = `${siteUrl}/api/confirm-email?token=${token}`;
+  const resend = getResend();
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: "Confirm your Bergen Beat subscription",
+    html: `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding:32px 16px;">
+        <h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 8px;">
+          🎵 Almost there!
+        </h1>
+        <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 24px;">
+          Click the button below to confirm your email and start receiving the
+          Bergen Beat weekly events digest.
+        </p>
+        <a href="${confirmUrl}"
+          style="display:inline-block;background:#3355ba;color:#fff;font-size:15px;font-weight:600;
+                 padding:12px 28px;border-radius:8px;text-decoration:none;">
+          Confirm my subscription →
+        </a>
+        <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;">
+          If you didn't sign up for Bergen Beat, you can safely ignore this email.
+          This link expires in 48 hours.
+        </p>
+      </div>
+    `,
+  });
+}
+
 // ─── Submission confirmation ───────────────────────────────────────────────────
 
 export async function sendSubmissionConfirmation({

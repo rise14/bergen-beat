@@ -7,6 +7,7 @@
 @layer base {
   :root {
     --font-sans: "Inter", system-ui, sans-serif;
+    --font-serif: "Lora", Georgia, serif;
   }
 
   html {
@@ -14,12 +15,11 @@
   }
 
   body {
-    @apply bg-white text-gray-900;
+    @apply bg-cream text-gray-900;
   }
 }
 
 @layer utilities {
-  /* Line clamp helpers for event card descriptions */
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -31,5 +31,13 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+  /* Amber accent rule — add to a heading to get the orange underbar */
+  .heading-rule {
+    @apply relative pb-3 mb-1;
+  }
+  .heading-rule::after {
+    content: "";
+    @apply absolute bottom-0 left-0 h-0.5 w-10 rounded-full bg-accent-orange;
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { sendSubmissionConfirmation } from "@/lib/email";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const submissionSchema = z.object({
   title: z.string().min(3).max(200),
@@ -21,6 +22,19 @@ const submissionSchema = z.object({
 
 // POST /api/submissions — accepts a public event submission
 export async function POST(request: Request) {
+  // Rate limit: 3 submissions per IP per hour
+  const { allowed, headers: rlHeaders } = await checkRateLimit(request, {
+    endpoint: "submissions",
+    limit: 3,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: rlHeaders }
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();

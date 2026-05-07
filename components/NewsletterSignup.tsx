@@ -34,17 +34,20 @@ export function NewsletterSignup() {
   }
 
   return (
-    <div className="rounded-2xl bg-brand-50 px-8 py-10 text-center">
-      <h2 className="text-2xl font-bold text-gray-900">
+    <div className="rounded-2xl border border-cream-200 bg-cream-50 px-8 py-10 text-center">
+      <p className="text-xs font-semibold uppercase tracking-widest text-accent-orange mb-3">
+        Weekly digest
+      </p>
+      <h2 className="font-serif text-2xl font-semibold text-navy-800">
         Never miss a local event
       </h2>
-      <p className="mt-2 text-gray-500">
-        Get a weekly roundup of the best events in Bergen County, delivered every Thursday.
+      <p className="mt-2 text-sm text-walnut">
+        The best events in Bergen County, delivered every Monday morning.
       </p>
 
       {status === "success" ? (
-        <p className="mt-6 font-medium text-green-600">
-          You&apos;re in! We&apos;ll see you Thursday. 🎉
+        <p className="mt-6 font-medium text-navy-800">
+          Check your inbox to confirm your subscription!
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -54,12 +57,12 @@ export function NewsletterSignup() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
             required
-            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:border-brand-500 focus:outline-none sm:w-72"
+            className="w-full rounded-lg border border-cream-200 bg-white px-4 py-2 text-sm focus:border-walnut focus:outline-none sm:w-72"
           />
           <button
             type="submit"
             disabled={status === "loading"}
-            className="rounded-lg bg-brand-600 px-6 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            className="rounded-lg bg-navy-800 px-6 py-2 text-sm font-semibold text-white hover:bg-navy-900 disabled:opacity-60 transition-colors"
           >
             {status === "loading" ? "Subscribing…" : "Subscribe"}
           </button>

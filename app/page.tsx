@@ -15,31 +15,25 @@ export const metadata: Metadata = {
   openGraph: { url: siteUrl },
 };
 
-// Revalidate the homepage every 5 minutes
 export const revalidate = 300;
 
 const DATE_FILTERS = [
-  { label: "All upcoming", value: null },
-  { label: "Today", value: "today" },
-  { label: "This weekend", value: "this-weekend" },
-  { label: "This week", value: "this-week" },
-  { label: "This month", value: "this-month" },
+  { label: "All upcoming",  value: null },
+  { label: "Today",         value: "today" },
+  { label: "This weekend",  value: "this-weekend" },
+  { label: "This week",     value: "this-week" },
+  { label: "This month",    value: "this-month" },
 ] as const;
 
 const SECTION_LABELS: Record<string, string> = {
-  today: "Today",
+  today:         "Today",
   "this-weekend": "This weekend",
-  "this-week": "This week",
-  "this-month": "This month",
+  "this-week":   "This week",
+  "this-month":  "This month",
 };
 
-interface SearchParams {
-  date?: string;
-}
-
-interface Props {
-  searchParams: SearchParams;
-}
+interface SearchParams { date?: string; }
+interface Props { searchParams: SearchParams; }
 
 export default async function HomePage({ searchParams }: Props) {
   const activeDate = searchParams.date ?? null;
@@ -54,7 +48,6 @@ export default async function HomePage({ searchParams }: Props) {
   ]);
 
   const sectionLabel = isFiltered ? SECTION_LABELS[activeDate!] ?? "Events" : "Coming up";
-
   const websiteJsonLd = buildWebSiteJsonLd();
 
   return (
@@ -64,30 +57,36 @@ export default async function HomePage({ searchParams }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
       />
 
-      {/* Hero */}
-      <section className="py-12 text-center">
+      {/* ── Hero — navy card ─────────────────────────────────── */}
+      <section className="-mx-4 -mt-8 bg-navy-800 px-4 pb-10 pt-12 text-center sm:-mx-6 sm:px-6">
         <h1 className="flex justify-center">
           <img
             src="/bergen-beat-logo.png"
             alt="Bergen Beat"
-            className="h-auto w-full max-w-sm"
+            className="h-auto w-full max-w-xs brightness-0 invert"
           />
         </h1>
-        <p className="mt-4 text-lg text-gray-500">
-          What&apos;s happening in Bergen County, New Jersey — concerts, markets, festivals, food, and more.
+        <p className="mx-auto mt-4 max-w-md text-base text-sky">
+          What&apos;s happening in Bergen County, NJ — concerts, markets, festivals, food, and more.
         </p>
-        <div className="mt-6">
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <a
             href="/events"
-            className="inline-block rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700"
+            className="rounded-full bg-accent-orange px-7 py-3 text-sm font-semibold text-white hover:bg-walnut transition-colors"
           >
             Browse all events
+          </a>
+          <a
+            href="/submit"
+            className="rounded-full border border-sky/40 px-7 py-3 text-sm font-semibold text-sky hover:border-sky hover:text-white transition-colors"
+          >
+            Submit an event
           </a>
         </div>
       </section>
 
-      {/* Quick date filters */}
-      <section className="pb-2">
+      {/* ── Quick date filters ───────────────────────────────── */}
+      <section className="pt-8 pb-2">
         <div className="flex flex-wrap gap-2">
           {DATE_FILTERS.map((f) => {
             const href = f.value ? `/?date=${f.value}` : "/";
@@ -98,8 +97,8 @@ export default async function HomePage({ searchParams }: Props) {
                 href={href}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-brand-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    ? "bg-navy-800 text-white"
+                    : "border border-cream-200 bg-white text-walnut hover:border-walnut"
                 }`}
               >
                 {f.label}
@@ -109,9 +108,9 @@ export default async function HomePage({ searchParams }: Props) {
         </div>
       </section>
 
-      {/* Category grid */}
+      {/* ── Category grid ────────────────────────────────────── */}
       <section className="py-8">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-gray-400">
+        <h2 className="heading-rule mb-6 text-sm font-semibold uppercase tracking-widest text-walnut">
           Browse by category
         </h2>
         <div className="flex flex-wrap gap-2">
@@ -121,31 +120,31 @@ export default async function HomePage({ searchParams }: Props) {
         </div>
       </section>
 
-      {/* Featured events — only show when no date filter active */}
+      {/* ── Featured events ──────────────────────────────────── */}
       {!isFiltered && featuredEvents.length > 0 && (
         <section className="py-8">
-          <h2 className="mb-6 text-2xl font-bold text-gray-900">
+          <h2 className="heading-rule mb-8 font-serif text-2xl font-semibold text-navy-800">
             Featured this week
           </h2>
           <EventGrid events={featuredEvents} />
         </section>
       )}
 
-      {/* Upcoming / filtered events */}
+      {/* ── Upcoming / filtered events ───────────────────────── */}
       <section className="py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">{sectionLabel}</h2>
-            {isFiltered && (
-              <p className="mt-1 text-sm text-gray-500">
-                {browseEvents.length} event{browseEvents.length !== 1 ? "s" : ""} found
-              </p>
-            )}
-          </div>
-          <a href="/events" className="text-sm font-medium text-brand-600 hover:underline">
+        <div className="mb-8 flex items-end justify-between">
+          <h2 className="heading-rule font-serif text-2xl font-semibold text-navy-800">
+            {sectionLabel}
+          </h2>
+          <a href="/events" className="mb-3 text-sm font-medium text-brand-600 hover:underline">
             See all →
           </a>
         </div>
+        {isFiltered && (
+          <p className="-mt-4 mb-6 text-sm text-walnut">
+            {browseEvents.length} event{browseEvents.length !== 1 ? "s" : ""} found
+          </p>
+        )}
         {browseEvents.length > 0 ? (
           <EventGrid events={browseEvents} />
         ) : (
@@ -158,7 +157,7 @@ export default async function HomePage({ searchParams }: Props) {
         )}
       </section>
 
-      {/* Newsletter */}
+      {/* ── Newsletter ───────────────────────────────────────── */}
       <section className="py-12">
         <NewsletterSignup />
       </section>

@@ -9,12 +9,26 @@
 
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 const BUCKET = "event-images";
 
 export async function POST(request: Request) {
+  // Rate limit: 10 uploads per IP per hour
+  const { allowed, headers: rlHeaders } = await checkRateLimit(request, {
+    endpoint: "upload",
+    limit: 10,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: rlHeaders }
+    );
+  }
+
   let formData: FormData;
   try {
     formData = await request.formData();
