@@ -31,6 +31,13 @@ export const metadata: Metadata = {
   verification: {
     google: "9eOqTpmb1kK_HjXtw-PdRBTNApE1HcesLozFyQ9_kjc",
   },
+  alternates: {
+    types: {
+      "application/rss+xml": [
+        { url: "/feed.xml", title: "Bergen Beat — Events in Bergen County, NJ" },
+      ],
+    },
+  },
 };
 
 export default function RootLayout({

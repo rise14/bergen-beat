@@ -43,9 +43,9 @@ export default async function VenuePage({ params }: Props) {
   if (!venue) notFound();
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
-    { name: "Home",   url: siteUrl },
-    { name: "Venues", url: `${siteUrl}/venues` },
-    { name: venue.name, url: `${siteUrl}/venues/${venue.slug}` },
+    { name: "Home",   href: siteUrl },
+    { name: "Venues", href: `${siteUrl}/venues` },
+    { name: venue.name, href: `${siteUrl}/venues/${venue.slug}` },
   ]);
 
   return (
