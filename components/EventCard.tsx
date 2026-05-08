@@ -1,11 +1,14 @@
+import Image from "next/image";
 import type { Event } from "@/types";
 import { formatShortDate, formatEventTime } from "@/lib/dates";
 
 interface Props {
   event: Event;
+  /** Pass true for above-the-fold cards to skip lazy loading */
+  priority?: boolean;
 }
 
-export function EventCard({ event }: Props) {
+export function EventCard({ event, priority = false }: Props) {
   return (
     <a
       href={`/events/${event.slug}`}
@@ -14,10 +17,13 @@ export function EventCard({ event }: Props) {
       {/* Banner image */}
       <div className="relative h-44 overflow-hidden bg-cream-100">
         {event.banner_url ? (
-          <img
+          <Image
             src={event.banner_url}
             alt={event.title}
-            className="h-full w-full object-cover transition group-hover:scale-105"
+            fill
+            sizes="(min-width: 1280px) 265px, (min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw"
+            className="object-cover transition group-hover:scale-105"
+            priority={priority}
           />
         ) : (
           <div

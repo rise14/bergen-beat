@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getEventBySlug, getRelatedEvents } from "@/lib/events";
 import { buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
@@ -63,11 +64,14 @@ export default async function EventPage({ params }: Props) {
 
       {/* Banner */}
       {event.banner_url && (
-        <div className="mb-8 overflow-hidden rounded-2xl">
-          <img
+        <div className="relative mb-8 h-64 overflow-hidden rounded-2xl sm:h-80">
+          <Image
             src={event.banner_url}
             alt={event.title}
-            className="h-64 w-full object-cover sm:h-80"
+            fill
+            priority
+            sizes="(min-width: 1200px) 1152px, 100vw"
+            className="object-cover"
           />
         </div>
       )}

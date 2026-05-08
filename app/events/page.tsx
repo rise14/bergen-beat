@@ -95,7 +95,7 @@ export default async function EventsPage({ searchParams }: Props) {
       <div className="mt-8">
         {events.length > 0 ? (
           <>
-            <EventGrid events={events} />
+            <EventGrid events={events} priorityCount={page === 1 ? 4 : 0} />
             <Pagination
               page={page}
               totalPages={totalPages}

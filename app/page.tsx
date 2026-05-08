@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { EventFilters } from "@/types";
+import Image from "next/image";
 import { EventGrid } from "@/components/EventGrid";
 import { CategoryPill } from "@/components/CategoryPill";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
@@ -60,9 +61,13 @@ export default async function HomePage({ searchParams }: Props) {
       {/* ── Hero — navy card ─────────────────────────────────── */}
       <section className="-mx-4 -mt-8 bg-navy-800 px-4 pb-10 pt-12 text-center sm:-mx-6 sm:px-6">
         <h1 className="flex justify-center">
-          <img
+          {/* Logo: 1230×498px intrinsic, displayed at max-w-xs (320px) */}
+          <Image
             src="/bergen-beat-logo.png"
             alt="Bergen Beat"
+            width={320}
+            height={130}
+            priority
             className="h-auto w-full max-w-xs brightness-0 invert"
           />
         </h1>
@@ -126,7 +131,7 @@ export default async function HomePage({ searchParams }: Props) {
           <h2 className="heading-rule mb-8 font-serif text-2xl font-semibold text-navy-800">
             Featured this week
           </h2>
-          <EventGrid events={featuredEvents} />
+          <EventGrid events={featuredEvents} priorityCount={4} />
         </section>
       )}
 
@@ -146,7 +151,7 @@ export default async function HomePage({ searchParams }: Props) {
           </p>
         )}
         {browseEvents.length > 0 ? (
-          <EventGrid events={browseEvents} />
+          <EventGrid events={browseEvents} priorityCount={featuredEvents.length === 0 ? 4 : 0} />
         ) : (
           <div className="py-16 text-center text-gray-400">
             <p className="text-lg">No events found for this period.</p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 const NAV_LINKS = [
   { href: "/events",        label: "Events" },
@@ -14,11 +15,14 @@ export function SiteHeader() {
   return (
     <header className="bg-navy-800">
       <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
-        {/* Logo — inverted to white for dark background */}
+        {/* Logo — intrinsic 1230×498, displayed at h-8 (32px) */}
         <a href="/" className="flex items-center">
-          <img
+          <Image
             src="/bergen-beat-logo.png"
             alt="Bergen Beat"
+            width={79}
+            height={32}
+            priority
             className="h-8 w-auto brightness-0 invert"
           />
         </a>
