@@ -67,8 +67,18 @@ export function EventCard({ event }: Props) {
         {/* Venue / neighborhood */}
         {(event.venue?.name ?? event.neighborhood?.name) && (
           <p className="mt-0.5 text-xs text-gray-400">
-            {event.venue?.name ?? event.neighborhood?.name}
-            {event.venue?.city ? `, ${event.venue.city}` : ""}
+            {event.venue?.name ? (
+              <a
+                href={`/venues/${(event.venue as { slug?: string }).slug ?? ""}`}
+                className="hover:text-brand-600 hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {event.venue.name}
+                {event.venue.city ? `, ${event.venue.city}` : ""}
+              </a>
+            ) : (
+              event.neighborhood?.name
+            )}
           </p>
         )}
 

@@ -43,11 +43,23 @@ async function resolveVenueId(
 
   if (existing) return existing.id;
 
-  // Create new venue
+  // Create new venue with a slug derived from name + city
+  const venueSlugBase = slugify(venueName.trim() + (venueCity.trim() ? `-${venueCity.trim()}` : ""));
+  // Ensure uniqueness by appending a short random suffix if needed
+  const { data: slugConflict } = await supabase
+    .from("venues")
+    .select("id")
+    .eq("slug", venueSlugBase)
+    .maybeSingle();
+  const venueSlug = slugConflict
+    ? `${venueSlugBase}-${Math.random().toString(36).slice(2, 7)}`
+    : venueSlugBase;
+
   const { data: created } = await supabase
     .from("venues")
     .insert({
       name: venueName.trim(),
+      slug: venueSlug,
       address: venueAddress.trim() || null,
       city: venueCity.trim() || null,
       neighborhood_id: neighborhoodId || null,

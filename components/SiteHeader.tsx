@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const NAV_LINKS = [
   { href: "/events",        label: "Events" },
-  { href: "/categories",    label: "Categories" },
+  { href: "/venues",        label: "Venues" },
   { href: "/neighborhoods", label: "Neighborhoods" },
 ];
 

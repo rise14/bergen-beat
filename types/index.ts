@@ -21,6 +21,7 @@ export interface Neighborhood {
 
 export interface Venue {
   id: UUID;
+  slug: string;
   name: string;
   address: string | null;
   city: string | null;

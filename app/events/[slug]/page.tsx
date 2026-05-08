@@ -144,7 +144,12 @@ export default async function EventPage({ params }: Props) {
             {event.venue && (
               <div className="flex justify-between">
                 <span className="text-gray-500">Venue</span>
-                <span className="font-medium text-right">{event.venue.name}</span>
+                <a
+                  href={`/venues/${(event.venue as { slug?: string }).slug ?? ""}`}
+                  className="font-medium text-right text-brand-600 hover:underline"
+                >
+                  {event.venue.name}
+                </a>
               </div>
             )}
 

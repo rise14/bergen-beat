@@ -10,7 +10,7 @@ const EVENT_CARD_SELECT = `
   is_free, price_range, banner_url, featured, is_recurring, recurrence_note,
   category:categories(id, name, slug, icon, color),
   neighborhood:neighborhoods(id, name, slug),
-  venue:venues(id, name, city, lat, lng)
+  venue:venues(id, slug, name, city, lat, lng)
 `;
 
 // Fields to select for full event detail pages
@@ -18,7 +18,7 @@ const EVENT_DETAIL_SELECT = `
   *,
   category:categories(id, name, slug, icon, color),
   neighborhood:neighborhoods(id, name, slug),
-  venue:venues(id, name, address, city, state, lat, lng, website)
+  venue:venues(id, slug, name, address, city, state, lat, lng, website)
 `;
 
 // Supabase returns partial rows and arrays for joined relations.
