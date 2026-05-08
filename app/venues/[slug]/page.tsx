@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getVenueBySlug, getVenueEvents, getActiveVenueSlugs } from "@/lib/venues";
-import { buildBreadcrumbJsonLd } from "@/lib/seo";
+import { buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
 
@@ -43,10 +43,37 @@ export default async function VenuePage({ params }: Props) {
   if (!venue) notFound();
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
-    { name: "Home",   href: siteUrl },
-    { name: "Venues", href: `${siteUrl}/venues` },
-    { name: venue.name, href: `${siteUrl}/venues/${venue.slug}` },
+    { name: "Home",   href: "/" },
+    { name: "Venues", href: "/venues" },
+    { name: venue.name, href: `/venues/${venue.slug}` },
   ]);
+
+  const placeJsonLd = buildPlaceJsonLd({
+    name: venue.city ? `${venue.name}, ${venue.city}` : venue.name,
+    url: `${siteUrl}/venues/${venue.slug}`,
+    description: `Upcoming events at ${venue.name}${venue.city ? ` in ${venue.city}` : ""}, Bergen County, NJ.`,
+    address: {
+      streetAddress:   venue.address  ?? undefined,
+      addressLocality: venue.city     ?? undefined,
+      addressRegion:   venue.state    ?? "NJ",
+      postalCode:      venue.zip      ?? undefined,
+    },
+    geo: venue.lat && venue.lng ? { lat: venue.lat, lng: venue.lng } : undefined,
+    website: venue.website ?? undefined,
+  });
+
+  const eventListJsonLd = events.length > 0
+    ? buildItemListJsonLd(
+        `Events at ${venue.name}`,
+        `${siteUrl}/venues/${venue.slug}`,
+        events.slice(0, 10).map((e) => ({
+          name: e.title,
+          url: `/events/${e.slug}`,
+          ...(e.short_description ? { description: e.short_description } : {}),
+          ...(e.banner_url ? { image: e.banner_url } : {}),
+        }))
+      )
+    : null;
 
   return (
     <>
@@ -54,6 +81,16 @@ export default async function VenuePage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(placeJsonLd) }}
+      />
+      {eventListJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(eventListJsonLd) }}
+        />
+      )}
 
       {/* Back link */}
       <a href="/venues" className="text-sm text-gray-400 hover:text-gray-600">

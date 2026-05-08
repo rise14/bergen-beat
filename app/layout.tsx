@@ -3,6 +3,7 @@ import { Lora } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { buildOrganizationJsonLd } from "@/lib/seo";
 
 const lora = Lora({
   subsets: ["latin"],
@@ -45,9 +46,15 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const orgJsonLd = buildOrganizationJsonLd();
+
   return (
     <html lang="en" className={lora.variable}>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+        />
         <GoogleAnalytics />
         <SiteHeader />
 

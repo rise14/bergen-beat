@@ -91,7 +91,8 @@ export function buildBreadcrumbJsonLd(items: BreadcrumbItem[]): Record<string, u
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      item: `${siteUrl}${item.href}`,
+      // Handle both absolute URLs and relative paths
+      item: item.href.startsWith("http") ? item.href : `${siteUrl}${item.href}`,
     })),
   };
 }
@@ -116,5 +117,114 @@ export function buildWebSiteJsonLd(): Record<string, unknown> {
       },
       "query-input": "required name=search_term_string",
     },
+  };
+}
+
+// ─── Organization JSON-LD ─────────────────────────────────────────────────────
+// Declares the site as an organization entity. Placed in the root layout so it
+// appears on every page. Helps Google Knowledge Panel and entity disambiguation.
+// https://developers.google.com/search/docs/appearance/structured-data/organization
+
+export function buildOrganizationJsonLd(): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Bergen Beat",
+    url: siteUrl,
+    logo: `${siteUrl}/bergen-beat-logo.png`,
+    description:
+      "Bergen Beat is a local events discovery platform for Bergen County, NJ — concerts, markets, festivals, food events, and more.",
+    areaServed: {
+      "@type": "AdministrativeArea",
+      name: "Bergen County",
+      containedInPlace: { "@type": "State", name: "New Jersey" },
+    },
+    sameAs: [],
+  };
+}
+
+// ─── Place JSON-LD ─────────────────────────────────────────────────────────────
+// Used on venue and neighborhood pages to declare a physical place.
+// https://developers.google.com/search/docs/appearance/structured-data/local-business
+
+export interface PlaceData {
+  name: string;
+  url: string;
+  description?: string;
+  address?: {
+    streetAddress?: string;
+    addressLocality?: string;
+    addressRegion?: string;
+    postalCode?: string;
+  };
+  geo?: { lat: number; lng: number };
+  website?: string;
+}
+
+export function buildPlaceJsonLd(place: PlaceData): Record<string, unknown> {
+  const jsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Place",
+    name: place.name,
+    url: place.url,
+  };
+
+  if (place.description) jsonLd.description = place.description;
+  if (place.website)     jsonLd.sameAs = place.website;
+
+  if (place.address && Object.values(place.address).some(Boolean)) {
+    jsonLd.address = {
+      "@type": "PostalAddress",
+      ...(place.address.streetAddress  ? { streetAddress:   place.address.streetAddress }  : {}),
+      ...(place.address.addressLocality ? { addressLocality: place.address.addressLocality } : {}),
+      addressRegion:  place.address.addressRegion  ?? "NJ",
+      addressCountry: "US",
+      ...(place.address.postalCode ? { postalCode: place.address.postalCode } : {}),
+    };
+  }
+
+  if (place.geo) {
+    jsonLd.geo = {
+      "@type": "GeoCoordinates",
+      latitude:  place.geo.lat,
+      longitude: place.geo.lng,
+    };
+  }
+
+  return jsonLd;
+}
+
+// ─── ItemList JSON-LD ─────────────────────────────────────────────────────────
+// Used on listing pages (categories, neighborhoods, venues) so Google can show
+// individual items as rich results inside a list.
+// https://developers.google.com/search/docs/appearance/structured-data/item-list
+
+export interface ItemListEntry {
+  name: string;
+  url: string;
+  position?: number;
+  image?: string;
+  description?: string;
+}
+
+export function buildItemListJsonLd(
+  name: string,
+  url: string,
+  items: ItemListEntry[]
+): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name,
+    url,
+    numberOfItems: items.length,
+    itemListElement: items.map((item, i) => ({
+      "@type": "ListItem",
+      position: item.position ?? i + 1,
+      name: item.name,
+      url: item.url.startsWith("http") ? item.url : `${siteUrl}${item.url}`,
+      ...(item.description ? { description: item.description } : {}),
+      ...(item.image       ? { image: item.image }              : {}),
+    })),
   };
 }
