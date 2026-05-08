@@ -389,3 +389,51 @@ export async function bulkDeleteDraftEvents(ids: string[]): Promise<{ count: num
 
   return { count: data?.length ?? 0 };
 }
+
+// ─── Bulk archive (any status) ────────────────────────────────────────────────
+
+export async function bulkArchiveEvents(ids: string[]): Promise<{ count: number }> {
+  if (!ids.length) return { count: 0 };
+
+  const supabase = createAdminSupabaseClient();
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("events")
+    .update({ status: "archived", updated_at: now })
+    .in("id", ids)
+    .in("status", ["published", "draft"])
+    .select("id");
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/events");
+  revalidatePath("/");
+  revalidatePath("/events");
+
+  return { count: data?.length ?? 0 };
+}
+
+// ─── Bulk unpublish (published → draft) ──────────────────────────────────────
+
+export async function bulkUnpublishEvents(ids: string[]): Promise<{ count: number }> {
+  if (!ids.length) return { count: 0 };
+
+  const supabase = createAdminSupabaseClient();
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("events")
+    .update({ status: "draft", published_at: null, updated_at: now })
+    .in("id", ids)
+    .eq("status", "published")
+    .select("id");
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/events");
+  revalidatePath("/");
+  revalidatePath("/events");
+
+  return { count: data?.length ?? 0 };
+}

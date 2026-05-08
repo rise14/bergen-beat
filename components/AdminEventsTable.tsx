@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { bulkPublishEvents, bulkDeleteDraftEvents } from "@/app/admin/actions";
+import {
+  bulkPublishEvents,
+  bulkArchiveEvents,
+  bulkUnpublishEvents,
+  bulkDeleteDraftEvents,
+} from "@/app/admin/actions";
 import { formatEventDate } from "@/lib/dates";
 import type { EventRow } from "@/app/admin/events/page";
 
@@ -16,22 +21,28 @@ const SOURCE_LABELS: Record<string, string> = {
   predicthq:    "PredictHQ",
 };
 
+function statusBadgeClass(status: string) {
+  return status === "published"
+    ? "bg-green-100 text-green-700"
+    : status === "draft"
+    ? "bg-yellow-100 text-yellow-700"
+    : "bg-gray-100 text-gray-500";
+}
+
 export function AdminEventsTable({ events }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  const draftEvents = events.filter((e) => e.status === "draft");
-  const selectedDrafts = [...selected].filter((id) =>
-    draftEvents.some((e) => e.id === id)
-  );
+  const selectedEvents = events.filter((e) => selected.has(e.id));
+  const selectedDraftIds     = selectedEvents.filter((e) => e.status === "draft").map((e) => e.id);
+  const selectedPublishedIds = selectedEvents.filter((e) => e.status === "published").map((e) => e.id);
+  const selectedArchivableIds = selectedEvents
+    .filter((e) => e.status === "draft" || e.status === "published")
+    .map((e) => e.id);
 
   function toggleAll() {
-    if (selected.size === draftEvents.length && draftEvents.length > 0) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(draftEvents.map((e) => e.id)));
-    }
+    setSelected(selected.size === events.length ? new Set() : new Set(events.map((e) => e.id)));
   }
 
   function toggleOne(id: string) {
@@ -47,79 +58,92 @@ export function AdminEventsTable({ events }: Props) {
     setTimeout(() => setToast(null), 4000);
   }
 
-  function handleBulkPublish() {
-    if (!selectedDrafts.length) return;
+  function run(action: () => Promise<{ count: number }>, msg: (n: number) => string) {
     startTransition(async () => {
       try {
-        const { count } = await bulkPublishEvents(selectedDrafts);
+        const { count } = await action();
         setSelected(new Set());
-        showToast("success", `Published ${count} event${count !== 1 ? "s" : ""}.`);
+        showToast("success", msg(count));
       } catch (err) {
-        showToast("error", err instanceof Error ? err.message : "Publish failed.");
+        showToast("error", err instanceof Error ? err.message : "Action failed.");
       }
     });
   }
 
-  function handleBulkDelete() {
-    if (!selectedDrafts.length) return;
-    if (!confirm(`Delete ${selectedDrafts.length} draft event${selectedDrafts.length !== 1 ? "s" : ""}? This cannot be undone.`)) return;
-    startTransition(async () => {
-      try {
-        const { count } = await bulkDeleteDraftEvents(selectedDrafts);
-        setSelected(new Set());
-        showToast("success", `Deleted ${count} draft${count !== 1 ? "s" : ""}.`);
-      } catch (err) {
-        showToast("error", err instanceof Error ? err.message : "Delete failed.");
-      }
-    });
+  function handlePublish() {
+    if (!selectedDraftIds.length) return;
+    run(() => bulkPublishEvents(selectedDraftIds), (n) => `Published ${n} event${n !== 1 ? "s" : ""}.`);
   }
 
-  const allDraftsSelected = draftEvents.length > 0 && selected.size === draftEvents.length;
+  function handleUnpublish() {
+    if (!selectedPublishedIds.length) return;
+    if (!confirm(`Move ${selectedPublishedIds.length} published event${selectedPublishedIds.length !== 1 ? "s" : ""} back to draft?`)) return;
+    run(() => bulkUnpublishEvents(selectedPublishedIds), (n) => `Moved ${n} event${n !== 1 ? "s" : ""} to draft.`);
+  }
+
+  function handleArchive() {
+    if (!selectedArchivableIds.length) return;
+    if (!confirm(`Archive ${selectedArchivableIds.length} event${selectedArchivableIds.length !== 1 ? "s" : ""}? They'll be hidden from the public site.`)) return;
+    run(() => bulkArchiveEvents(selectedArchivableIds), (n) => `Archived ${n} event${n !== 1 ? "s" : ""}.`);
+  }
+
+  function handleDelete() {
+    if (!selectedDraftIds.length) return;
+    if (!confirm(`Permanently delete ${selectedDraftIds.length} draft${selectedDraftIds.length !== 1 ? "s" : ""}? This cannot be undone.`)) return;
+    run(() => bulkDeleteDraftEvents(selectedDraftIds), (n) => `Deleted ${n} draft${n !== 1 ? "s" : ""}.`);
+  }
+
+  const allSelected  = events.length > 0 && selected.size === events.length;
+  const someSelected = selected.size > 0 && !allSelected;
 
   return (
     <div>
       {/* Toast */}
       {toast && (
-        <div
-          className={`mb-4 rounded-lg px-4 py-3 text-sm font-medium ${
-            toast.type === "success"
-              ? "bg-green-50 text-green-800"
-              : "bg-red-50 text-red-700"
-          }`}
-        >
+        <div className={`mb-4 rounded-lg px-4 py-3 text-sm font-medium ${toast.type === "success" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-700"}`}>
           {toast.message}
         </div>
       )}
 
-      {/* Bulk action bar — only visible when something is selected */}
+      {/* Bulk action bar */}
       {selected.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
-          <span className="text-sm text-gray-600">
-            <span className="font-semibold">{selected.size}</span> draft
-            {selected.size !== 1 ? "s" : ""} selected
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+          <span className="mr-1 text-sm text-gray-600">
+            <span className="font-semibold">{selected.size}</span> selected
           </span>
-          <div className="ml-auto flex gap-2">
-            <button
-              onClick={handleBulkPublish}
-              disabled={isPending}
-              className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-            >
-              {isPending ? "Publishing…" : "Publish selected"}
+
+          {selectedDraftIds.length > 0 && (
+            <button onClick={handlePublish} disabled={isPending}
+              className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50">
+              Publish {selectedDraftIds.length !== selected.size && `${selectedDraftIds.length} `}draft{selectedDraftIds.length !== 1 ? "s" : ""}
             </button>
-            <button
-              onClick={handleBulkDelete}
-              disabled={isPending}
-              className="rounded-lg bg-red-50 px-4 py-1.5 text-sm font-medium text-red-600 hover:bg-red-100 disabled:opacity-50"
-            >
-              Delete selected
+          )}
+
+          {selectedPublishedIds.length > 0 && (
+            <button onClick={handleUnpublish} disabled={isPending}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+              Move to draft
             </button>
-            <button
-              onClick={() => setSelected(new Set())}
-              className="rounded-lg px-4 py-1.5 text-sm text-gray-500 hover:text-gray-700"
-            >
-              Cancel
+          )}
+
+          {selectedArchivableIds.length > 0 && (
+            <button onClick={handleArchive} disabled={isPending}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+              Archive
             </button>
-          </div>
+          )}
+
+          {selectedDraftIds.length > 0 && (
+            <button onClick={handleDelete} disabled={isPending}
+              className="rounded-lg bg-red-50 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-100 disabled:opacity-50">
+              Delete drafts
+            </button>
+          )}
+
+          <button onClick={() => setSelected(new Set())}
+            className="ml-auto text-sm text-gray-400 hover:text-gray-600">
+            Clear
+          </button>
         </div>
       )}
 
@@ -129,14 +153,11 @@ export function AdminEventsTable({ events }: Props) {
           <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
             <tr>
               <th className="px-4 py-3">
-                {draftEvents.length > 0 && (
-                  <input
-                    type="checkbox"
-                    checked={allDraftsSelected}
-                    onChange={toggleAll}
-                    title="Select all drafts"
-                    className="h-4 w-4 rounded border-gray-300 text-brand-600"
-                  />
+                {events.length > 0 && (
+                  <input type="checkbox" checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                    onChange={toggleAll} title="Select all"
+                    className="h-4 w-4 rounded border-gray-300 text-brand-600" />
                 )}
               </th>
               <th className="px-4 py-3">Title</th>
@@ -150,68 +171,37 @@ export function AdminEventsTable({ events }: Props) {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {events.map((event) => {
-              const isDraft = event.status === "draft";
-              const isSelected = selected.has(event.id);
+              const isSelected  = selected.has(event.id);
               const effectiveEnd = event.end_date ?? event.start_date;
               const isPast = new Date(effectiveEnd) < new Date();
-
               return (
-                <tr
-                  key={event.id}
-                  className={`hover:bg-gray-50 ${isSelected ? "bg-brand-50" : ""} ${isPast && event.status !== "archived" ? "opacity-60" : ""}`}
-                >
+                <tr key={event.id}
+                  className={`hover:bg-gray-50 transition-colors ${isSelected ? "bg-brand-50" : ""} ${isPast && event.status !== "archived" ? "opacity-60" : ""}`}>
                   <td className="px-4 py-3">
-                    {isDraft && (
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleOne(event.id)}
-                        className="h-4 w-4 rounded border-gray-300 text-brand-600"
-                      />
-                    )}
+                    <input type="checkbox" checked={isSelected} onChange={() => toggleOne(event.id)}
+                      className="h-4 w-4 rounded border-gray-300 text-brand-600" />
                   </td>
                   <td className="px-4 py-3 font-medium text-gray-900">
-                    <span>{event.title}</span>
+                    {event.title}
                     {isPast && event.status !== "archived" && (
-                      <span className="ml-2 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-400">
-                        past
-                      </span>
+                      <span className="ml-2 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-400">past</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {event.category?.name ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {formatEventDate(event.start_date)}
-                  </td>
+                  <td className="px-4 py-3 text-gray-500">{event.category?.name ?? "—"}</td>
+                  <td className="px-4 py-3 text-gray-500">{formatEventDate(event.start_date)}</td>
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
                       {SOURCE_LABELS[event.source] ?? event.source}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        event.status === "published"
-                          ? "bg-green-100 text-green-700"
-                          : event.status === "draft"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeClass(event.status)}`}>
                       {event.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-400">
-                    {event.featured ? "⭐" : "—"}
-                  </td>
+                  <td className="px-4 py-3 text-gray-400">{event.featured ? "⭐" : "—"}</td>
                   <td className="px-4 py-3">
-                    <a
-                      href={`/admin/events/${event.id}/edit`}
-                      className="text-brand-600 hover:underline"
-                    >
-                      Edit
-                    </a>
+                    <a href={`/admin/events/${event.id}/edit`} className="text-brand-600 hover:underline">Edit</a>
                   </td>
                 </tr>
               );
@@ -222,16 +212,14 @@ export function AdminEventsTable({ events }: Props) {
         {events.length === 0 && (
           <div className="py-12 text-center text-gray-400">
             No events yet.{" "}
-            <a href="/admin/events/new" className="text-brand-600 hover:underline">
-              Create one →
-            </a>
+            <a href="/admin/events/new" className="text-brand-600 hover:underline">Create one →</a>
           </div>
         )}
       </div>
 
-      {draftEvents.length > 0 && selected.size === 0 && (
+      {selected.size === 0 && events.length > 0 && (
         <p className="mt-3 text-xs text-gray-400">
-          {draftEvents.length} draft{draftEvents.length !== 1 ? "s" : ""} — check the boxes to bulk publish or delete.
+          Select rows to bulk publish, archive, move to draft, or delete.
         </p>
       )}
     </div>
