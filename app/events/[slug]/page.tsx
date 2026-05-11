@@ -111,15 +111,22 @@ export default async function EventPage({ params, searchParams }: Props) {
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
         {/* Main content */}
         <div className="lg:col-span-2">
-          {/* Category */}
-          {event.category && (
-            <a
-              href={`/categories/${event.category.slug}`}
-              className="inline-block mb-3 rounded-full bg-cream-50 px-3 py-1 text-xs font-semibold text-navy-800"
-            >
-              {event.category.name}
-            </a>
-          )}
+          {/* Category + Outside Bergen badges */}
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            {event.category && (
+              <a
+                href={`/categories/${event.category.slug}`}
+                className="rounded-full bg-cream-50 px-3 py-1 text-xs font-semibold text-navy-800 hover:bg-cream-100 transition-colors"
+              >
+                {event.category.name}
+              </a>
+            )}
+            {event.is_outside_bergen && (
+              <span className="rounded-full border border-walnut/20 bg-cream-50 px-3 py-1 text-xs font-medium text-walnut">
+                📍 Outside Bergen County
+              </span>
+            )}
+          </div>
 
           <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
             {event.title}
