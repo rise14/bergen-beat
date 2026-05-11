@@ -17,6 +17,8 @@ export interface VenueWithCount {
 
 export interface VenueDetail extends VenueWithCount {
   zip: string | null;
+  description: string | null;
+  hero_url: string | null;
 }
 
 /** All venues that have at least one upcoming published event, sorted by event count desc. */
@@ -69,7 +71,7 @@ export async function getVenueBySlug(slug: string): Promise<VenueDetail | null> 
   const { data } = await supabase
     .from("venues")
     .select(`
-      id, slug, name, address, city, state, zip, lat, lng, website,
+      id, slug, name, address, city, state, zip, lat, lng, website, description, hero_url,
       neighborhood:neighborhoods(name, slug),
       events(id, start_date, status)
     `)
@@ -82,6 +84,7 @@ export async function getVenueBySlug(slug: string): Promise<VenueDetail | null> 
     id: string; slug: string; name: string; address: string | null;
     city: string | null; state: string; zip: string | null;
     lat: number | null; lng: number | null; website: string | null;
+    description: string | null; hero_url: string | null;
     neighborhood: { name: string; slug: string } | null;
     events: Array<{ id: string; start_date: string; status: string }>;
   };
@@ -94,7 +97,7 @@ export async function getVenueBySlug(slug: string): Promise<VenueDetail | null> 
   return {
     id: d.id, slug: d.slug, name: d.name, address: d.address,
     city: d.city, state: d.state, zip: d.zip, lat: d.lat, lng: d.lng,
-    website: d.website,
+    website: d.website, description: d.description, hero_url: d.hero_url,
     neighborhood: Array.isArray(d.neighborhood) ? d.neighborhood[0] ?? null : d.neighborhood,
     upcomingCount,
   };
@@ -141,4 +144,100 @@ export async function getActiveVenueSlugs(): Promise<string[]> {
     if (row.venue?.slug) slugs.add(row.venue.slug);
   }
   return [...slugs];
+}
+
+// ─── Admin: all venues ────────────────────────────────────────────────────────
+
+export interface AdminVenue {
+  id: string;
+  slug: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  state: string;
+  zip: string | null;
+  lat: number | null;
+  lng: number | null;
+  website: string | null;
+  description: string | null;
+  hero_url: string | null;
+  neighborhood_id: string | null;
+  neighborhood: { id: string; name: string; slug: string } | null;
+  totalEvents: number;
+  upcomingEvents: number;
+}
+
+export async function getAllVenuesAdmin(): Promise<AdminVenue[]> {
+  const supabase = createAdminSupabaseClient();
+  const now = new Date().toISOString();
+
+  const { data } = await supabase
+    .from("venues")
+    .select(`
+      id, slug, name, address, city, state, zip, lat, lng, website, description, hero_url, neighborhood_id,
+      neighborhood:neighborhoods(id, name, slug),
+      events(id, start_date, status)
+    `)
+    .order("name", { ascending: true });
+
+  if (!data) return [];
+
+  return (data as unknown as Array<{
+    id: string; slug: string; name: string; address: string | null;
+    city: string | null; state: string; zip: string | null;
+    lat: number | null; lng: number | null; website: string | null;
+    description: string | null; hero_url: string | null;
+    neighborhood_id: string | null;
+    neighborhood: { id: string; name: string; slug: string } | null;
+    events: Array<{ id: string; start_date: string; status: string }>;
+  }>).map((v) => {
+    const allEvs = v.events ?? [];
+    return {
+      id: v.id, slug: v.slug, name: v.name, address: v.address,
+      city: v.city, state: v.state, zip: v.zip, lat: v.lat, lng: v.lng,
+      website: v.website, description: v.description, hero_url: v.hero_url,
+      neighborhood_id: v.neighborhood_id,
+      neighborhood: Array.isArray(v.neighborhood) ? v.neighborhood[0] ?? null : v.neighborhood,
+      totalEvents:    allEvs.filter((e) => e.status !== "archived").length,
+      upcomingEvents: allEvs.filter((e) => e.status === "published" && e.start_date >= now).length,
+    };
+  });
+}
+
+export async function getVenueByIdAdmin(id: string): Promise<AdminVenue | null> {
+  const supabase = createAdminSupabaseClient();
+  const now = new Date().toISOString();
+
+  const { data } = await supabase
+    .from("venues")
+    .select(`
+      id, slug, name, address, city, state, zip, lat, lng, website, description, hero_url, neighborhood_id,
+      neighborhood:neighborhoods(id, name, slug),
+      events(id, start_date, status)
+    `)
+    .eq("id", id)
+    .single();
+
+  if (!data) return null;
+
+  const d = data as unknown as {
+    id: string; slug: string; name: string; address: string | null;
+    city: string | null; state: string; zip: string | null;
+    lat: number | null; lng: number | null; website: string | null;
+    description: string | null; hero_url: string | null;
+    neighborhood_id: string | null;
+    neighborhood: { id: string; name: string; slug: string } | null;
+    events: Array<{ id: string; start_date: string; status: string }>;
+  };
+
+  const allEvs = d.events ?? [];
+  return {
+    id: d.id, slug: d.slug, name: d.name, address: d.address,
+    city: d.city, state: d.state, zip: d.zip, lat: d.lat, lng: d.lng,
+    website: d.website, description: d.description, hero_url: d.hero_url,
+    neighborhood_id: d.neighborhood_id,
+    neighborhood: Array.isArray(d.neighborhood) ? d.neighborhood[0] ?? null : d.neighborhood,
+    totalEvents:    allEvs.filter((e) => e.status !== "archived").length,
+    upcomingEvents: allEvs.filter((e) => e.status === "published" && e.start_date >= now).length,
+  };
 }

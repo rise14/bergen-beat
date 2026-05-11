@@ -53,7 +53,7 @@ export default function AdminLoginPage({ searchParams }: Props) {
             </p>
             <p className="mt-4 text-xs text-gray-400">
               Didn&apos;t get it? Check your spam folder, or{" "}
-              <a href="/admin/login" className="text-brand-600 hover:underline">
+              <a href="/admin/login" className="text-accent-orange hover:underline">
                 try again
               </a>
               .
@@ -77,11 +77,11 @@ export default function AdminLoginPage({ searchParams }: Props) {
                 name="email"
                 placeholder="admin@bergenbeat.net"
                 required
-                className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:border-navy-700 focus:outline-none"
               />
               <button
                 type="submit"
-                className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                className="w-full rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-900"
               >
                 Send login link
               </button>

@@ -1,6 +1,7 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { SubscriberTable } from "@/components/SubscriberTable";
 import type { SubscriberRow } from "@/components/SubscriberTable";
+import { SendTestDigest } from "@/components/admin/SendTestDigest";
 
 export const revalidate = 0;
 
@@ -41,7 +42,7 @@ export default async function SubscribersPage() {
       <div className="mb-8 grid grid-cols-3 gap-4">
         <div className="rounded-xl border border-gray-100 bg-white p-5">
           <p className="text-xs text-gray-500">Confirmed</p>
-          <p className="mt-1 text-3xl font-bold text-brand-600">{confirmed}</p>
+          <p className="mt-1 text-3xl font-bold text-navy-800">{confirmed}</p>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-5">
           <p className="text-xs text-gray-500">Pending confirmation</p>
@@ -53,6 +54,10 @@ export default async function SubscribersPage() {
           <p className="text-xs text-gray-500">Total</p>
           <p className="mt-1 text-3xl font-bold text-gray-900">{total}</p>
         </div>
+      </div>
+
+      <div className="mb-8">
+        <SendTestDigest adminEmail={process.env.ADMIN_EMAIL ?? "admin@bergenbeat.net"} />
       </div>
 
       <SubscriberTable subscribers={subscribers} />

@@ -9,6 +9,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
 export const maxDuration = 30;
@@ -48,6 +49,15 @@ export async function GET(request: Request) {
   }
 
   const archived = [...(byEndDate ?? []), ...(byStartDate ?? [])];
+
+  // Bust ISR cache so expired events drop off the homepage and /events immediately
+  if (archived.length > 0) {
+    revalidatePath("/");
+    revalidatePath("/events");
+    revalidatePath("/this-weekend");
+  }
+
+  console.log(`[cron/expire] archived ${archived.length} event(s)`);
 
   return NextResponse.json({
     archived: archived.length,

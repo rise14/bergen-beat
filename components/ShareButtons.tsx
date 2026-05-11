@@ -48,7 +48,7 @@ export function ShareButtons({ url, title }: Props) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Share on Facebook"
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-600 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 transition-colors"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-600 hover:border-navy-600 hover:bg-cream-50 hover:text-navy-800 transition-colors"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
             <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />

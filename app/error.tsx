@@ -7,6 +7,7 @@
  */
 
 import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 interface Props {
   error: Error & { digest?: string };
@@ -15,8 +16,7 @@ interface Props {
 
 export default function Error({ error, reset }: Props) {
   useEffect(() => {
-    // Log to your error-tracking service here (e.g. Sentry.captureException)
-    console.error("Page error:", error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (
@@ -32,7 +32,7 @@ export default function Error({ error, reset }: Props) {
       <div className="mt-8 flex gap-3">
         <button
           onClick={reset}
-          className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
+          className="rounded-lg bg-navy-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy-900"
         >
           Try again
         </button>

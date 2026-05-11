@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 interface Props {
   lat: number;
@@ -59,7 +60,7 @@ export function EventMap({ lat, lng, label }: Props) {
         href={googleMapsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center gap-1.5 bg-gray-50 py-2 text-xs text-gray-500 hover:text-brand-600"
+        className="flex items-center justify-center gap-1.5 bg-gray-50 py-2 text-xs text-gray-500 hover:text-accent-orange"
       >
         <span>📍</span> Open in Google Maps
       </a>

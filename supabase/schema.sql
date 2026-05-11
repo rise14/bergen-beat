@@ -334,3 +334,19 @@ select
   'admin',
   now()
 where not exists (select 1 from events where slug = 'bergen-county-jazz-night');
+
+-- ============================================================
+-- SUBSCRIBER PREFERENCES  (migration — run after initial schema)
+-- ============================================================
+
+alter table newsletter_subscribers
+  add column if not exists token_expires_at  timestamptz,
+  add column if not exists unsubscribed_at   timestamptz,
+  add column if not exists preferences       jsonb not null default '{}';
+
+-- preferences shape:
+-- {
+--   "neighborhoods": ["hackensack", "ridgewood"],  -- empty = all
+--   "categories":    ["music", "food-drink"],       -- empty = all
+--   "frequency":     "both"                         -- "weekly" | "weekend" | "both"
+-- }

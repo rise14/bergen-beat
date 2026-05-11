@@ -85,10 +85,28 @@ export default async function NeighborhoodPage({ params }: Props) {
         ← All neighborhoods
       </a>
 
-      <div className="mt-4 mb-8">
-        <h1 className="heading-rule font-serif text-3xl font-semibold text-navy-800">
-          Events in {nb.name}
-        </h1>
+      {/* Hero image — uses <img> since domain is admin-entered and unpredictable */}
+      {nb.hero_url && (
+        <div className="relative mt-4 h-52 w-full overflow-hidden rounded-2xl sm:h-72">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={nb.hero_url}
+            alt={nb.name}
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-navy-900/60 to-transparent" />
+          <h1 className="absolute bottom-5 left-6 font-serif text-3xl font-semibold text-white drop-shadow">
+            {nb.name}
+          </h1>
+        </div>
+      )}
+
+      <div className={`${nb.hero_url ? "mt-6" : "mt-4"} mb-8`}>
+        {!nb.hero_url && (
+          <h1 className="heading-rule font-serif text-3xl font-semibold text-navy-800">
+            Events in {nb.name}
+          </h1>
+        )}
         <p className="mt-4 text-walnut">{locationStr}, NJ</p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center rounded-full bg-navy-800 px-3 py-1 text-sm font-semibold text-sky-light">
@@ -101,6 +119,11 @@ export default async function NeighborhoodPage({ params }: Props) {
           )}
         </div>
       </div>
+
+      {/* Description */}
+      {nb.description && (
+        <p className="mb-6 max-w-2xl text-walnut leading-relaxed">{nb.description}</p>
+      )}
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-4">
         {/* Sidebar */}

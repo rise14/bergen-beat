@@ -49,7 +49,7 @@ export default function ConfirmSubscriptionPage({ searchParams }: Props) {
       <div className="mt-8 flex gap-3">
         <Link
           href="/events"
-          className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
+          className="rounded-lg bg-navy-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy-900"
         >
           Browse events
         </Link>

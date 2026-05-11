@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchTicketmasterEvents } from "@/lib/importers/ticketmaster";
 import { fetchPredictHQEvents } from "@/lib/importers/predicthq";
+import { fetchAllIcalSources } from "@/lib/importers/ical";
 import { enrichWithImages } from "@/lib/importers/images";
 import { saveImportedEvents } from "@/lib/importers/save";
 import { revalidatePath } from "next/cache";
@@ -51,6 +52,27 @@ export async function GET(req: NextRequest) {
     summary.predicthq = { fetched: raw.length, ...result };
   } catch (err) {
     summary.predicthq = {
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  // ── iCal feeds ────────────────────────────────────────────────────────────
+  try {
+    const icalResults = await fetchAllIcalSources();
+    const allEvents = icalResults.flatMap((r) => r.events);
+    const enriched = await enrichWithImages(allEvents);
+    const result = await saveImportedEvents(enriched, true); // auto-publish
+    summary.ical = {
+      sources: icalResults.map((r) => ({
+        name: r.source.name,
+        fetched: r.fetched,
+        error: r.error,
+      })),
+      total_fetched: allEvents.length,
+      ...result,
+    };
+  } catch (err) {
+    summary.ical = {
       error: err instanceof Error ? err.message : String(err),
     };
   }

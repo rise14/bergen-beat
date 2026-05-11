@@ -1,7 +1,8 @@
 /**
  * GET /api/cron/newsletter
  *
- * Sends the weekly Bergen Beat digest to all subscribers.
+ * Sends the weekly Bergen Beat digest to all confirmed subscribers
+ * whose frequency preference is "weekly" or "both".
  * Scheduled via vercel.json to run every Thursday at noon ET.
  *
  * Secured with CRON_SECRET — Vercel sends this automatically.
@@ -15,14 +16,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 function getWeekLabel(): string {
-  const now = new Date();
-  const start = new Date(now);
-  // Find this Saturday
-  const dayOfWeek = start.getDay(); // 0=Sun, 4=Thu
-  const daysUntilSat = (6 - dayOfWeek + 7) % 7 || 7;
-  start.setDate(start.getDate() + daysUntilSat - 1); // Start from tomorrow (Fri)
-  start.setDate(start.getDate() - (daysUntilSat === 7 ? 6 : daysUntilSat - 2));
-
+  // Label = "May 9–15" covering the next 7 days from today
+  const start = new Date();
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
 
@@ -30,6 +25,12 @@ function getWeekLabel(): string {
     d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" });
 
   return `${fmt(start)}–${fmt(end)}`;
+}
+
+interface SubscriberRow {
+  email: string;
+  token: string;
+  preferences: { frequency?: string; neighborhoods?: string[]; categories?: string[] } | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -42,20 +43,25 @@ export async function GET(req: NextRequest) {
 
   const supabase = createAdminSupabaseClient();
 
-  // Fetch all confirmed subscribers
+  // Fetch confirmed, active subscribers with their token and preferences
   const { data: subscriberRows, error: subError } = await supabase
     .from("newsletter_subscribers")
-    .select("email")
-    .eq("confirmed", true);
+    .select("email, token, preferences")
+    .eq("confirmed", true)
+    .is("unsubscribed_at", null);
 
   if (subError) {
     return NextResponse.json({ error: subError.message }, { status: 500 });
   }
 
-  const subscribers = (subscriberRows ?? []).map((r) => r.email as string);
+  // Only send weekly digest to subscribers who want it (weekly or both; default = weekly)
+  const eligible = ((subscriberRows ?? []) as SubscriberRow[]).filter((s) => {
+    const freq = s.preferences?.frequency ?? "weekly";
+    return freq === "weekly" || freq === "both";
+  });
 
-  if (!subscribers.length) {
-    return NextResponse.json({ message: "No subscribers yet", sent: 0 });
+  if (!eligible.length) {
+    return NextResponse.json({ message: "No eligible subscribers", sent: 0 });
   }
 
   // Fetch the best upcoming events for the next 14 days
@@ -65,37 +71,83 @@ export async function GET(req: NextRequest) {
   const { data: eventRows, error: evError } = await supabase
     .from("events")
     .select(`
-      title, slug, start_date, is_free, price_range, banner_url, short_description,
+      id, title, slug, start_date, is_free, price_range, banner_url, short_description,
       venue:venues(name, city),
-      category:categories(name, icon)
+      category:categories(name, slug, icon),
+      neighborhood:neighborhoods(slug)
     `)
     .eq("status", "published")
     .gte("start_date", now)
     .lte("start_date", twoWeeks)
     .order("featured", { ascending: false })
     .order("start_date", { ascending: true })
-    .limit(8);
+    .limit(40); // fetch more; we'll filter per-subscriber
 
   if (evError) {
     return NextResponse.json({ error: evError.message }, { status: 500 });
   }
 
-  const events = (eventRows ?? []) as unknown as Parameters<typeof sendWeeklyNewsletter>[0]["events"];
+  const allEvents = (eventRows ?? []) as unknown as Array<{
+    id: string; title: string; slug: string; start_date: string;
+    is_free: boolean; price_range: string | null; banner_url: string | null;
+    short_description: string | null;
+    venue: { name: string; city: string | null } | null;
+    category: { name: string; slug: string; icon: string | null } | null;
+    neighborhood: { slug: string } | null;
+  }>;
 
-  if (!events.length) {
+  if (!allEvents.length) {
     return NextResponse.json({ message: "No upcoming events to send", sent: 0 });
   }
 
   const weekLabel = getWeekLabel();
-  const result = await sendWeeklyNewsletter({ subscribers, events, weekLabel });
+  let totalSent = 0;
 
-  console.log("[cron/newsletter]", { weekLabel, subscribers: subscribers.length, ...result });
+  // Send per-subscriber with preference filtering
+  for (const sub of eligible) {
+    const prefs = sub.preferences ?? {};
+    const wantedNeighborhoods = prefs.neighborhoods ?? [];
+    const wantedCategories    = prefs.categories    ?? [];
+
+    const filtered = allEvents.filter((e) => {
+      const neighborhoodOk = !wantedNeighborhoods.length ||
+        (e.neighborhood?.slug && wantedNeighborhoods.includes(e.neighborhood.slug));
+      const categoryOk = !wantedCategories.length ||
+        (e.category?.slug && wantedCategories.includes(e.category.slug));
+      return neighborhoodOk && categoryOk;
+    }).slice(0, 8);
+
+    // Skip subscriber if no matching events
+    if (!filtered.length) continue;
+
+    const result = await sendWeeklyNewsletter({
+      subscribers: [{ email: sub.email, token: sub.token }],
+      events: filtered,
+      weekLabel,
+    });
+    totalSent += result.sent;
+  }
+
+  // Save edition to archive (best-effort — don't fail the cron if this errors)
+  // Use the union of all event IDs sent (unique across all subscribers)
+  const sentEventIds = [...new Set(allEvents.map((e) => e.id))];
+  try {
+    await supabase.from("newsletter_archive").insert({
+      type: "weekly",
+      week_label: weekLabel,
+      event_ids: sentEventIds,
+      sent_count: totalSent,
+    });
+  } catch (archiveErr) {
+    console.warn("[cron/newsletter] Failed to save archive entry:", archiveErr);
+  }
+
+  console.log("[cron/newsletter]", { weekLabel, eligible: eligible.length, totalSent });
 
   return NextResponse.json({
     success: true,
     weekLabel,
-    subscriberCount: subscribers.length,
-    eventCount: events.length,
-    ...result,
+    eligibleCount: eligible.length,
+    sent: totalSent,
   });
 }

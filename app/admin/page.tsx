@@ -96,7 +96,7 @@ export default async function AdminDashboardPage() {
   }
 
   const topStats = [
-    { label: "Upcoming events",     value: upcomingEvents      ?? 0, href: "/admin/events?status=published", color: "text-brand-600" },
+    { label: "Upcoming events",     value: upcomingEvents      ?? 0, href: "/admin/events?status=published", color: "text-accent-orange" },
     { label: "Drafts to review",    value: draftEvents         ?? 0, href: "/admin/events?status=draft",    color: (draftEvents ?? 0) > 0 ? "text-amber-600" : "text-gray-900", urgent: (draftEvents ?? 0) > 0 },
     { label: "Pending submissions", value: pendingSubmissions  ?? 0, href: "/admin/submissions",             color: (pendingSubmissions ?? 0) > 0 ? "text-amber-600" : "text-gray-900", urgent: (pendingSubmissions ?? 0) > 0 },
     { label: "Subscribers",         value: subscribers         ?? 0, href: null, color: "text-gray-900" },
@@ -110,7 +110,7 @@ export default async function AdminDashboardPage() {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <div className="flex gap-3">
           <a href="/admin/events/new"
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+            className="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-900">
             + Create event
           </a>
           <a href="/admin/submissions"
@@ -156,7 +156,7 @@ export default async function AdminDashboardPage() {
                 return (
                   <li key={e.id} className="py-3 first:pt-0 last:pb-0">
                     <a href={`/events/${e.slug}`} target="_blank" rel="noopener noreferrer" className="group block">
-                      <p className="text-sm font-medium text-gray-800 group-hover:text-brand-600 line-clamp-1">{e.title}</p>
+                      <p className="text-sm font-medium text-gray-800 group-hover:text-accent-orange line-clamp-1">{e.title}</p>
                       <p className="mt-0.5 text-xs text-gray-400">
                         {fmtDT(e.start_date as string)}{venue ? ` · ${venue.name}` : ""}
                       </p>
@@ -167,7 +167,7 @@ export default async function AdminDashboardPage() {
             </ul>
           )}
           <a href="/events" target="_blank" rel="noopener noreferrer"
-            className="mt-4 inline-block text-xs font-medium text-brand-600 hover:underline">
+            className="mt-4 inline-block text-xs font-medium text-accent-orange hover:underline">
             View public events page →
           </a>
         </div>
@@ -176,7 +176,7 @@ export default async function AdminDashboardPage() {
         <div className="rounded-xl border border-gray-100 bg-white p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-400">Recently added</h2>
-            <a href="/admin/events" className="text-xs font-medium text-brand-600 hover:underline">Manage all →</a>
+            <a href="/admin/events" className="text-xs font-medium text-accent-orange hover:underline">Manage all →</a>
           </div>
           {!recentlyAdded || recentlyAdded.length === 0 ? (
             <p className="text-sm text-gray-400">No events yet.</p>
@@ -186,7 +186,7 @@ export default async function AdminDashboardPage() {
                 <li key={e.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <a href={`/admin/events/${e.id}/edit`}
-                      className="block truncate text-sm font-medium text-gray-800 hover:text-brand-600">
+                      className="block truncate text-sm font-medium text-gray-800 hover:text-accent-orange">
                       {e.title}
                     </a>
                     <p className="mt-0.5 text-xs text-gray-400">

@@ -17,6 +17,8 @@ export interface Neighborhood {
   name: string;
   slug: string;
   city: string | null;
+  description: string | null;
+  hero_url: string | null;
 }
 
 export interface Venue {
@@ -56,7 +58,8 @@ export interface Event {
   organizer_name: string | null;
   organizer_email: string | null;
   featured: boolean;
-  source: "admin" | "submission" | "ticketmaster" | "predicthq";
+  is_outside_bergen: boolean;
+  source: "admin" | "submission" | "ticketmaster" | "predicthq" | "ical";
   external_id: string | null;    // external API event ID for deduplication
   submission_id: UUID | null;
   published_at: string | null;
@@ -102,7 +105,7 @@ export interface NewsletterSubscriber {
 
 // ─── Import log — tracks events pulled from external APIs ────────────────────
 
-export type ImportSource = "ticketmaster" | "predicthq";
+export type ImportSource = "ticketmaster" | "predicthq" | "ical";
 
 export interface ImportLog {
   id: UUID;
@@ -146,6 +149,7 @@ export interface EventFilters {
   neighborhoodSlug?: string;
   dateFilter?: "today" | "this-weekend" | "this-week" | "this-month";
   freeOnly?: boolean;
+  outsideBergen?: boolean;
   query?: string;
   limit?: number;
   page?: number;         // 1-based

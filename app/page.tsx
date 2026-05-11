@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { EventFilters } from "@/types";
 import Image from "next/image";
 import { EventGrid } from "@/components/EventGrid";
+import { FeaturedHero } from "@/components/FeaturedHero";
 import { CategoryPill } from "@/components/CategoryPill";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { getFeaturedEvents, getUpcomingEvents, getPublishedEvents } from "@/lib/events";
@@ -43,7 +44,7 @@ export default async function HomePage({ searchParams }: Props) {
   const [featuredEvents, browseEvents, categories] = await Promise.all([
     getFeaturedEvents(),
     isFiltered
-      ? getPublishedEvents({ dateFilter: activeDate as EventFilters["dateFilter"], limit: 12 }).then((r) => r.events)
+      ? getPublishedEvents({ dateFilter: activeDate as EventFilters["dateFilter"], pageSize: 12 }).then((r) => r.events)
       : getUpcomingEvents({ limit: 8 }),
     getCategories(),
   ]);
@@ -125,14 +126,9 @@ export default async function HomePage({ searchParams }: Props) {
         </div>
       </section>
 
-      {/* ── Featured events ──────────────────────────────────── */}
+      {/* ── Featured events hero ─────────────────────────────── */}
       {!isFiltered && featuredEvents.length > 0 && (
-        <section className="py-8">
-          <h2 className="heading-rule mb-8 font-serif text-2xl font-semibold text-navy-800">
-            Featured this week
-          </h2>
-          <EventGrid events={featuredEvents} priorityCount={4} />
-        </section>
+        <FeaturedHero events={featuredEvents} />
       )}
 
       {/* ── Upcoming / filtered events ───────────────────────── */}
@@ -141,7 +137,7 @@ export default async function HomePage({ searchParams }: Props) {
           <h2 className="heading-rule font-serif text-2xl font-semibold text-navy-800">
             {sectionLabel}
           </h2>
-          <a href="/events" className="mb-3 text-sm font-medium text-brand-600 hover:underline">
+          <a href="/events" className="mb-3 text-sm font-medium text-accent-orange hover:underline">
             See all →
           </a>
         </div>
@@ -155,7 +151,7 @@ export default async function HomePage({ searchParams }: Props) {
         ) : (
           <div className="py-16 text-center text-gray-400">
             <p className="text-lg">No events found for this period.</p>
-            <a href="/" className="mt-2 inline-block text-brand-600 hover:underline">
+            <a href="/" className="mt-2 inline-block text-accent-orange hover:underline">
               Show all upcoming
             </a>
           </div>

@@ -1,3 +1,12 @@
+// Sentry — gracefully falls back if the package isn't installed yet.
+// Run `npm install @sentry/nextjs` to enable.
+let withSentryConfig;
+try {
+  withSentryConfig = require("@sentry/nextjs").withSentryConfig;
+} catch {
+  withSentryConfig = (config) => config;
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -17,7 +26,7 @@ const nextConfig = {
         pathname: "/storage/v1/object/public/**",
       },
       {
-        // Ticketmaster event images
+        // Ticketmaster event images (ticketmaster.com CDN)
         protocol: "https",
         hostname: "s1.ticketmaster.com",
       },
@@ -25,6 +34,16 @@ const nextConfig = {
         // Ticketmaster CDN (alternate subdomain)
         protocol: "https",
         hostname: "*.ticketmaster.com",
+      },
+      {
+        // Ticketmaster image CDN — different domain used for DAM assets
+        protocol: "https",
+        hostname: "s1.ticketm.net",
+      },
+      {
+        // Ticketmaster CDN wildcard for ticketm.net
+        protocol: "https",
+        hostname: "*.ticketm.net",
       },
       {
         // Unsplash images (used as fallback banners for PredictHQ events)
@@ -52,4 +71,20 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  // Sentry organization and project (set these in your Sentry dashboard)
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+
+  // Suppress build-time Sentry output unless DEBUG is set
+  silent: !process.env.CI,
+
+  // Upload source maps to Sentry so stack traces show original code
+  widenClientFileUpload: true,
+
+  // Hide Sentry route annotation in the Next.js page tree
+  hideSourceMaps: true,
+
+  // Automatically tree-shake Sentry logger statements
+  disableLogger: true,
+});

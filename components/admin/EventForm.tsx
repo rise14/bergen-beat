@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import type { Category, Neighborhood, Event } from "@/types";
+import { ImageUpload } from "@/components/ImageUpload";
 
 interface Props {
   categories: Category[];
@@ -25,7 +26,7 @@ interface DuplicateHit {
 }
 
 const inputClass =
-  "w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none";
+  "w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-700 focus:outline-none";
 
 function Field({
   label,
@@ -64,9 +65,6 @@ export function EventForm({
   const [title, setTitle] = useState(initialValues.title ?? "");
   const [startDate, setStartDate] = useState(initialValues.start_date?.slice(0, 16) ?? "");
 
-  // ── Banner preview state ───────────────────────────────────────────────────
-  const [bannerUrl, setBannerUrl] = useState(initialValues.banner_url ?? "");
-  const [bannerError, setBannerError] = useState(false);
   const [duplicates, setDuplicates] = useState<DuplicateHit[]>([]);
   const [dismissedDupes, setDismissedDupes] = useState(false);
 
@@ -186,32 +184,12 @@ export function EventForm({
             className={inputClass} />
         </Field>
 
-        <Field label="Banner image URL" htmlFor="banner_url"
-          hint="Paste a direct image URL (JPEG/PNG/WebP). Use the upload tool on the submit form for new uploads.">
-          <input
-            id="banner_url" name="banner_url" type="url"
-            value={bannerUrl}
-            onChange={(e) => { setBannerUrl(e.target.value); setBannerError(false); }}
-            placeholder="https://example.com/image.jpg"
-            className={inputClass}
-          />
-          {bannerUrl && !bannerError && (
-            <div className="mt-2 overflow-hidden rounded-lg border border-gray-200">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={bannerUrl}
-                alt="Banner preview"
-                className="max-h-48 w-full object-cover"
-                onError={() => setBannerError(true)}
-              />
-            </div>
-          )}
-          {bannerUrl && bannerError && (
-            <p className="mt-1 text-xs text-red-500">
-              Couldn&apos;t load image — check the URL is a direct link to an image file.
-            </p>
-          )}
-        </Field>
+        <ImageUpload
+          name="banner_url"
+          initialUrl={initialValues.banner_url}
+          onUrlChange={() => {}}
+          showUrlFallback={true}
+        />
       </section>
 
       {/* ── Classification ─────────────────────────────────────── */}
@@ -268,7 +246,7 @@ export function EventForm({
         <div className="flex items-center gap-2">
           <input type="checkbox" id="is_recurring" name="is_recurring"
             defaultChecked={initialValues.is_recurring}
-            className="accent-brand-600" />
+            className="accent-navy-800" />
           <label htmlFor="is_recurring" className="text-sm text-gray-700">
             Recurring event
           </label>
@@ -315,7 +293,7 @@ export function EventForm({
         <div className="flex items-center gap-2">
           <input type="checkbox" id="is_free" name="is_free"
             defaultChecked={initialValues.is_free}
-            className="accent-brand-600" />
+            className="accent-navy-800" />
           <label htmlFor="is_free" className="text-sm text-gray-700">Free event</label>
         </div>
         <Field label="Price range" htmlFor="price_range">
@@ -359,13 +337,23 @@ export function EventForm({
             </select>
           </Field>
 
-          <div className="flex items-center gap-2 pb-2">
-            <input type="checkbox" id="featured" name="featured"
-              defaultChecked={initialValues.featured}
-              className="accent-brand-600" />
-            <label htmlFor="featured" className="text-sm text-gray-700">
-              ⭐ Featured on homepage
-            </label>
+          <div className="flex flex-col gap-2 pb-2">
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="featured" name="featured"
+                defaultChecked={initialValues.featured}
+                className="accent-navy-800" />
+              <label htmlFor="featured" className="text-sm text-gray-700">
+                ⭐ Featured on homepage
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="is_outside_bergen" name="is_outside_bergen"
+                defaultChecked={initialValues.is_outside_bergen}
+                className="accent-navy-800" />
+              <label htmlFor="is_outside_bergen" className="text-sm text-gray-700">
+                📍 Outside Bergen County
+              </label>
+            </div>
           </div>
         </div>
       </section>
@@ -374,7 +362,7 @@ export function EventForm({
       <div className="flex gap-3 border-t border-gray-100 pt-6">
         <button
           type="submit"
-          className="rounded-lg bg-brand-600 px-6 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+          className="rounded-lg bg-navy-800 px-6 py-2 text-sm font-semibold text-white hover:bg-navy-900"
         >
           {isEdit ? "Save changes" : "Create event"}
         </button>

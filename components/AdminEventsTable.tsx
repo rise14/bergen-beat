@@ -34,16 +34,27 @@ export function AdminEventsTable({ events }: Props) {
   const [isPending, startTransition] = useTransition();
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
+  // ── Filter state ──────────────────────────────────────────────────────────
+  const [query,        setQuery]        = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+
+  const filteredEvents = events.filter((e) => {
+    if (query        && !e.title.toLowerCase().includes(query.toLowerCase())) return false;
+    if (statusFilter !== "all" && e.status !== statusFilter) return false;
+    if (sourceFilter !== "all" && e.source !== sourceFilter) return false;
+    return true;
+  });
+
+  // Unique sources present in the full list
+  const sources = [...new Set(events.map((e) => e.source))].sort();
+
   const selectedEvents = events.filter((e) => selected.has(e.id));
   const selectedDraftIds     = selectedEvents.filter((e) => e.status === "draft").map((e) => e.id);
   const selectedPublishedIds = selectedEvents.filter((e) => e.status === "published").map((e) => e.id);
   const selectedArchivableIds = selectedEvents
     .filter((e) => e.status === "draft" || e.status === "published")
     .map((e) => e.id);
-
-  function toggleAll() {
-    setSelected(selected.size === events.length ? new Set() : new Set(events.map((e) => e.id)));
-  }
 
   function toggleOne(id: string) {
     setSelected((prev) => {
@@ -93,11 +104,56 @@ export function AdminEventsTable({ events }: Props) {
     run(() => bulkDeleteDraftEvents(selectedDraftIds), (n) => `Deleted ${n} draft${n !== 1 ? "s" : ""}.`);
   }
 
-  const allSelected  = events.length > 0 && selected.size === events.length;
-  const someSelected = selected.size > 0 && !allSelected;
+  const allSelected  = filteredEvents.length > 0 && filteredEvents.every((e) => selected.has(e.id));
+  const someSelected = filteredEvents.some((e) => selected.has(e.id)) && !allSelected;
+
+  function toggleAll() {
+    const ids = filteredEvents.map((e) => e.id);
+    const allChecked = ids.every((id) => selected.has(id));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allChecked) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
+      return next;
+    });
+  }
 
   return (
     <div>
+      {/* Filter bar */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input
+          type="search"
+          placeholder="Search events…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-800 placeholder-gray-400 focus:border-navy-800 focus:outline-none w-56"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 focus:border-navy-800 focus:outline-none"
+        >
+          <option value="all">All statuses</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+          <option value="archived">Archived</option>
+        </select>
+        <select
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value)}
+          className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 focus:border-navy-800 focus:outline-none"
+        >
+          <option value="all">All sources</option>
+          {sources.map((s) => (
+            <option key={s} value={s}>{SOURCE_LABELS[s] ?? s}</option>
+          ))}
+        </select>
+        <span className="ml-auto text-xs text-gray-400">
+          {filteredEvents.length} of {events.length}
+        </span>
+      </div>
+
       {/* Toast */}
       {toast && (
         <div className={`mb-4 rounded-lg px-4 py-3 text-sm font-medium ${toast.type === "success" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-700"}`}>
@@ -153,11 +209,11 @@ export function AdminEventsTable({ events }: Props) {
           <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
             <tr>
               <th className="px-4 py-3">
-                {events.length > 0 && (
+                {filteredEvents.length > 0 && (
                   <input type="checkbox" checked={allSelected}
                     ref={(el) => { if (el) el.indeterminate = someSelected; }}
                     onChange={toggleAll} title="Select all"
-                    className="h-4 w-4 rounded border-gray-300 text-brand-600" />
+                    className="h-4 w-4 rounded border-gray-300 accent-navy-800" />
                 )}
               </th>
               <th className="px-4 py-3">Title</th>
@@ -170,16 +226,16 @@ export function AdminEventsTable({ events }: Props) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {events.map((event) => {
+            {filteredEvents.map((event) => {
               const isSelected  = selected.has(event.id);
               const effectiveEnd = event.end_date ?? event.start_date;
               const isPast = new Date(effectiveEnd) < new Date();
               return (
                 <tr key={event.id}
-                  className={`hover:bg-gray-50 transition-colors ${isSelected ? "bg-brand-50" : ""} ${isPast && event.status !== "archived" ? "opacity-60" : ""}`}>
+                  className={`hover:bg-gray-50 transition-colors ${isSelected ? "bg-navy-50" : ""} ${isPast && event.status !== "archived" ? "opacity-60" : ""}`}>
                   <td className="px-4 py-3">
                     <input type="checkbox" checked={isSelected} onChange={() => toggleOne(event.id)}
-                      className="h-4 w-4 rounded border-gray-300 text-brand-600" />
+                      className="h-4 w-4 rounded border-gray-300 accent-navy-800" />
                   </td>
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {event.title}
@@ -201,7 +257,7 @@ export function AdminEventsTable({ events }: Props) {
                   </td>
                   <td className="px-4 py-3 text-gray-400">{event.featured ? "⭐" : "—"}</td>
                   <td className="px-4 py-3">
-                    <a href={`/admin/events/${event.id}/edit`} className="text-brand-600 hover:underline">Edit</a>
+                    <a href={`/admin/events/${event.id}/edit`} className="text-accent-orange hover:underline">Edit</a>
                   </td>
                 </tr>
               );
@@ -209,15 +265,20 @@ export function AdminEventsTable({ events }: Props) {
           </tbody>
         </table>
 
-        {events.length === 0 && (
+        {filteredEvents.length === 0 && (
           <div className="py-12 text-center text-gray-400">
-            No events yet.{" "}
-            <a href="/admin/events/new" className="text-brand-600 hover:underline">Create one →</a>
+            {events.length === 0 ? (
+              <>No events yet.{" "}
+                <a href="/admin/events/new" className="text-accent-orange hover:underline">Create one →</a>
+              </>
+            ) : (
+              "No events match your filters."
+            )}
           </div>
         )}
       </div>
 
-      {selected.size === 0 && events.length > 0 && (
+      {selected.size === 0 && filteredEvents.length > 0 && (
         <p className="mt-3 text-xs text-gray-400">
           Select rows to bulk publish, archive, move to draft, or delete.
         </p>

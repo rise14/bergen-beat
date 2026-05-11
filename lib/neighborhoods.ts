@@ -140,3 +140,30 @@ export async function getNeighborhoodDetails(slug: string): Promise<Neighborhood
     topCategories,
   };
 }
+
+/** All neighborhoods (id + name only) — for admin dropdowns. */
+export async function getAllNeighborhoodsAdmin(): Promise<{ id: string; name: string; slug: string }[]> {
+  const supabase = createAdminSupabaseClient();
+  const { data } = await supabase
+    .from("neighborhoods")
+    .select("id, name, slug")
+    .order("name", { ascending: true });
+  return (data ?? []) as { id: string; name: string; slug: string }[];
+}
+
+/** Full neighborhood row for admin editing. */
+export async function getNeighborhoodByIdAdmin(id: string): Promise<{
+  id: string; name: string; slug: string; city: string | null;
+  description: string | null; hero_url: string | null;
+} | null> {
+  const supabase = createAdminSupabaseClient();
+  const { data } = await supabase
+    .from("neighborhoods")
+    .select("id, name, slug, city, description, hero_url")
+    .eq("id", id)
+    .single();
+  return (data as unknown as {
+    id: string; name: string; slug: string; city: string | null;
+    description: string | null; hero_url: string | null;
+  }) ?? null;
+}

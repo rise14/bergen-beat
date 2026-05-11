@@ -44,7 +44,7 @@ export default async function AdminEventsPage() {
           {pastCount > 0 && <ArchivePastButton count={pastCount} />}
           <a
             href="/admin/events/new"
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            className="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-900"
           >
             ＋ New Event
           </a>

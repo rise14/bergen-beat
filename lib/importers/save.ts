@@ -48,11 +48,31 @@ async function resolveVenueId(
 
   if (existing) return existing.id as string;
 
+  // Generate a unique slug for the new venue
+  const slugBase = [venue.name, venue.city]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+
+  const { data: slugConflict } = await supabase
+    .from("venues")
+    .select("id")
+    .eq("slug", slugBase)
+    .maybeSingle();
+
+  const venueSlug = slugConflict
+    ? `${slugBase}-${Math.random().toString(36).slice(2, 6)}`
+    : slugBase;
+
   // Create a new venue row
   const { data: created } = await supabase
     .from("venues")
     .insert({
       name: venue.name,
+      slug: venueSlug,
       address: venue.address,
       city: venue.city,
       state: "NJ",

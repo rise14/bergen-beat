@@ -95,7 +95,7 @@ export default async function CategoryPage({ params }: Props) {
       ) : (
         <div className="py-16 text-center text-gray-400">
           <p>No upcoming {category.name.toLowerCase()} events right now.</p>
-          <a href="/submit" className="mt-2 inline-block text-brand-600 hover:underline">
+          <a href="/submit" className="mt-2 inline-block text-accent-orange hover:underline">
             Know of one? Submit it →
           </a>
         </div>

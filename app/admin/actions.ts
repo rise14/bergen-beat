@@ -113,9 +113,10 @@ export async function createEvent(formData: FormData) {
       recurrence_note:   formData.get("recurrence_note") as string || null,
       organizer_name:    formData.get("organizer_name") as string || null,
       organizer_email:   formData.get("organizer_email") as string || null,
-      banner_url:        formData.get("banner_url") as string || null,
-      featured:          formData.get("featured") === "on",
-      source:            "admin",
+      banner_url:          formData.get("banner_url") as string || null,
+      featured:            formData.get("featured") === "on",
+      is_outside_bergen:   formData.get("is_outside_bergen") === "on",
+      source:              "admin",
       published_at:      status === "published" ? new Date().toISOString() : null,
     })
     .select("id, slug")
@@ -169,10 +170,11 @@ export async function updateEvent(id: string, formData: FormData) {
       recurrence_note:   formData.get("recurrence_note") as string || null,
       organizer_name:    formData.get("organizer_name") as string || null,
       organizer_email:   formData.get("organizer_email") as string || null,
-      banner_url:        formData.get("banner_url") as string || null,
-      featured:          formData.get("featured") === "on",
-      published_at:      status === "published" ? new Date().toISOString() : null,
-      updated_at:        new Date().toISOString(),
+      banner_url:          formData.get("banner_url") as string || null,
+      featured:            formData.get("featured") === "on",
+      is_outside_bergen:   formData.get("is_outside_bergen") === "on",
+      published_at:        status === "published" ? new Date().toISOString() : null,
+      updated_at:          new Date().toISOString(),
     })
     .eq("id", id);
 
@@ -262,6 +264,41 @@ export async function approveSubmission(formData: FormData) {
 }
 
 // ─── Reject submission ────────────────────────────────────────────────────────
+
+// ─── Update submission (inline edit) ──────────────────────────────────────────
+
+export async function updateSubmission(formData: FormData) {
+  const supabase = createAdminSupabaseClient();
+
+  const id = formData.get("submission_id") as string;
+  if (!id) throw new Error("Missing submission_id");
+
+  const startRaw = formData.get("start_date") as string;
+  const endRaw   = formData.get("end_date")   as string;
+
+  const { error } = await supabase
+    .from("event_submissions")
+    .update({
+      title:         (formData.get("title")         as string).trim(),
+      description:   (formData.get("description")   as string) || null,
+      venue_name:    (formData.get("venue_name")     as string).trim(),
+      venue_address: (formData.get("venue_address")  as string) || null,
+      start_date:    startRaw ? new Date(startRaw).toISOString() : undefined,
+      end_date:      endRaw   ? new Date(endRaw).toISOString()   : null,
+      is_free:       formData.get("is_free") === "true",
+      price_range:   (formData.get("price_range")    as string) || null,
+      external_url:  (formData.get("external_url")   as string) || null,
+      banner_url:    (formData.get("banner_url")     as string) || null,
+      category_id:   (formData.get("category_id")   as string) || null,
+      admin_notes:   (formData.get("admin_notes")    as string) || null,
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(`Failed to update submission: ${error.message}`);
+
+  revalidatePath("/admin/submissions");
+  redirect(`/admin/submissions?edited=${id}`);
+}
 
 export async function rejectSubmission(formData: FormData) {
   const supabase = createAdminSupabaseClient();
@@ -436,4 +473,208 @@ export async function bulkUnpublishEvents(ids: string[]): Promise<{ count: numbe
   revalidatePath("/events");
 
   return { count: data?.length ?? 0 };
+}
+
+// ─── Update venue ─────────────────────────────────────────────────────────────
+
+export async function updateVenue(id: string, formData: FormData) {
+  const supabase = createAdminSupabaseClient();
+
+  const name  = (formData.get("name") as string).trim();
+  const slug  = (formData.get("slug") as string).trim();
+  if (!name) throw new Error("Venue name is required.");
+  if (!slug) throw new Error("Slug is required.");
+
+  const neighborhoodId = (formData.get("neighborhood_id") as string) || null;
+  const lat = formData.get("lat") ? parseFloat(formData.get("lat") as string) : null;
+  const lng = formData.get("lng") ? parseFloat(formData.get("lng") as string) : null;
+
+  const { error } = await supabase
+    .from("venues")
+    .update({
+      name,
+      slug,
+      address:         (formData.get("address") as string)  || null,
+      city:            (formData.get("city")    as string)  || null,
+      state:           (formData.get("state")   as string)  || "NJ",
+      zip:             (formData.get("zip")     as string)  || null,
+      lat:             isNaN(lat as number) ? null : lat,
+      lng:             isNaN(lng as number) ? null : lng,
+      website:         (formData.get("website")     as string) || null,
+      description:     (formData.get("description") as string) || null,
+      hero_url:        (formData.get("hero_url")    as string) || null,
+      neighborhood_id: neighborhoodId,
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(`Failed to update venue: ${error.message}`);
+
+  revalidatePath("/admin/venues");
+  revalidatePath(`/venues/${slug}`);
+  revalidatePath("/venues");
+
+  redirect(`/admin/venues/${id}/edit?saved=1`);
+}
+
+// ─── Delete venue ─────────────────────────────────────────────────────────────
+
+export async function deleteVenue(id: string): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createAdminSupabaseClient();
+
+  // Check for attached events before deleting
+  const { count } = await supabase
+    .from("events")
+    .select("*", { count: "exact", head: true })
+    .eq("venue_id", id)
+    .neq("status", "archived");
+
+  if ((count ?? 0) > 0) {
+    return { ok: false, error: `Cannot delete: ${count} active event${count !== 1 ? "s" : ""} are linked to this venue.` };
+  }
+
+  const { error } = await supabase.from("venues").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/venues");
+  revalidatePath("/venues");
+
+  return { ok: true };
+}
+
+// ─── Merge venues ─────────────────────────────────────────────────────────────
+// Reassigns all events from `fromId` to `toId`, then deletes `fromId`.
+
+export async function mergeVenues(fromId: string, toId: string): Promise<{ count: number }> {
+  if (fromId === toId) throw new Error("Cannot merge a venue into itself.");
+
+  const supabase = createAdminSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("events")
+    .update({ venue_id: toId })
+    .eq("venue_id", fromId)
+    .select("id");
+
+  if (error) throw new Error(`Failed to reassign events: ${error.message}`);
+
+  // Delete the now-empty source venue (ignore error if it still has archived events)
+  await supabase.from("venues").delete().eq("id", fromId);
+
+  revalidatePath("/admin/venues");
+  revalidatePath("/venues");
+  revalidatePath("/");
+
+  return { count: data?.length ?? 0 };
+}
+
+// ─── Update neighborhood ──────────────────────────────────────────────────────
+
+export async function updateNeighborhood(id: string, formData: FormData) {
+  const supabase = createAdminSupabaseClient();
+
+  const { error } = await supabase
+    .from("neighborhoods")
+    .update({
+      description: (formData.get("description") as string) || null,
+      hero_url:    (formData.get("hero_url")    as string) || null,
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(`Failed to update neighborhood: ${error.message}`);
+
+  const slug = (formData.get("slug") as string) || id;
+  revalidatePath("/admin/neighborhoods");
+  revalidatePath(`/neighborhoods/${slug}`);
+  revalidatePath("/neighborhoods");
+
+  redirect(`/admin/neighborhoods/${id}/edit?saved=1`);
+}
+
+// ─── Duplicate event ──────────────────────────────────────────────────────────
+
+export async function duplicateEvent(id: string): Promise<{ ok: boolean; newId?: string; error?: string }> {
+  const supabase = createAdminSupabaseClient();
+
+  const { data: source, error: fetchErr } = await supabase
+    .from("events")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (fetchErr || !source) {
+    return { ok: false, error: "Event not found." };
+  }
+
+  // Build a unique slug for the copy
+  const baseSlug = `${source.slug}-copy`;
+  let newSlug = baseSlug;
+  let attempt = 1;
+  while (true) {
+    const { data: conflict } = await supabase
+      .from("events")
+      .select("id")
+      .eq("slug", newSlug)
+      .maybeSingle();
+    if (!conflict) break;
+    attempt++;
+    newSlug = `${baseSlug}-${attempt}`;
+  }
+
+  // Strip fields that shouldn't be copied
+  const { id: _id, created_at: _ca, updated_at: _ua, published_at: _pa,
+          external_id: _eid, submission_id: _sid, ...rest } = source;
+
+  const { data: newEvent, error: insertErr } = await supabase
+    .from("events")
+    .insert({
+      ...rest,
+      slug:       newSlug,
+      title:      `${source.title} (copy)`,
+      status:     "draft",
+      source:     "admin",
+      featured:   false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (insertErr || !newEvent) {
+    return { ok: false, error: insertErr?.message ?? "Insert failed." };
+  }
+
+  revalidatePath("/admin/events");
+  return { ok: true, newId: newEvent.id };
+}
+
+// ─── iCal source management ───────────────────────────────────────────────────
+
+export async function addIcalSource(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createAdminSupabaseClient();
+  const name           = (formData.get("name")           as string)?.trim();
+  const url            = (formData.get("url")            as string)?.trim();
+  const category_guess = (formData.get("category_guess") as string)?.trim() || null;
+
+  if (!name) return { ok: false, error: "Name is required." };
+  if (!url)  return { ok: false, error: "URL is required." };
+
+  const { error } = await supabase
+    .from("ical_sources")
+    .insert({ name, url, category_guess });
+
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/import");
+  return { ok: true };
+}
+
+export async function toggleIcalSource(id: string, enabled: boolean): Promise<void> {
+  const supabase = createAdminSupabaseClient();
+  await supabase.from("ical_sources").update({ enabled }).eq("id", id);
+  revalidatePath("/admin/import");
+}
+
+export async function deleteIcalSource(id: string): Promise<void> {
+  const supabase = createAdminSupabaseClient();
+  await supabase.from("ical_sources").delete().eq("id", id);
+  revalidatePath("/admin/import");
 }

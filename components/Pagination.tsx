@@ -39,10 +39,10 @@ export function Pagination({ page, totalPages, total, pageSize, buildHref }: Pro
     [
       "flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg px-3 text-sm font-medium transition-colors",
       active
-        ? "bg-brand-600 text-white"
+        ? "bg-navy-800 text-white"
         : disabled
         ? "cursor-default text-gray-300"
-        : "border border-gray-200 text-gray-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700",
+        : "border border-gray-200 text-gray-700 hover:border-navy-600 hover:bg-cream-50 hover:text-navy-800",
     ].join(" ");
 
   return (

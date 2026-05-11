@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
-import { sendSubmissionConfirmation } from "@/lib/email";
+import { sendSubmissionConfirmation, sendAdminNewSubmissionAlert } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rateLimit";
 
 const submissionSchema = z.object({
@@ -62,12 +62,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to save submission" }, { status: 500 });
   }
 
-  // Send confirmation email to the organizer
-  await sendSubmissionConfirmation({
-    to: parsed.data.organizer_email,
-    organizerName: parsed.data.organizer_name,
-    eventTitle: parsed.data.title,
-  });
+  // Send both emails in parallel — don't let email failures block the 201 response
+  await Promise.allSettled([
+    sendSubmissionConfirmation({
+      to: parsed.data.organizer_email,
+      organizerName: parsed.data.organizer_name,
+      eventTitle: parsed.data.title,
+    }),
+    sendAdminNewSubmissionAlert({
+      eventTitle: parsed.data.title,
+      organizerName: parsed.data.organizer_name,
+      organizerEmail: parsed.data.organizer_email,
+    }),
+  ]);
 
   return NextResponse.json({ success: true, id: data.id }, { status: 201 });
 }

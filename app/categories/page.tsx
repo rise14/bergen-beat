@@ -25,11 +25,11 @@ export default async function CategoriesPage() {
           <a
             key={cat.id}
             href={`/categories/${cat.slug}`}
-            className="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm transition hover:border-brand-200 hover:shadow-md"
+            className="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm transition hover:border-cream-100 hover:shadow-md"
             style={{ borderTopColor: cat.color ?? undefined }}
           >
             <span className="text-4xl">{cat.icon ?? "📅"}</span>
-            <span className="text-sm font-semibold text-gray-800 group-hover:text-brand-600">
+            <span className="text-sm font-semibold text-gray-800 group-hover:text-accent-orange">
               {cat.name}
             </span>
           </a>

@@ -100,6 +100,10 @@ export async function getPublishedEvents(
     query = query.eq("is_free", true);
   }
 
+  if (filters.outsideBergen) {
+    query = query.eq("is_outside_bergen", true);
+  }
+
   if (filters.query) {
     query = query.textSearch("title", filters.query, { type: "websearch" });
   }
@@ -202,6 +206,18 @@ export async function getEventBySlug(slug: string): Promise<Event | null> {
     .select(EVENT_DETAIL_SELECT)
     .eq("slug", slug)
     .eq("status", "published")
+    .single();
+
+  return asEvent(data);
+}
+
+/** Admin-only: fetch any event regardless of status (for draft preview). */
+export async function getEventBySlugAdmin(slug: string): Promise<Event | null> {
+  const supabase = createAdminSupabaseClient();
+  const { data } = await supabase
+    .from("events")
+    .select(EVENT_DETAIL_SELECT)
+    .eq("slug", slug)
     .single();
 
   return asEvent(data);

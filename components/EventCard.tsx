@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import type { Event } from "@/types";
 import { formatShortDate, formatEventTime } from "@/lib/dates";
 
@@ -9,10 +12,15 @@ interface Props {
 }
 
 export function EventCard({ event, priority = false }: Props) {
+  const router = useRouter();
+
   return (
-    <a
-      href={`/events/${event.slug}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white transition hover:shadow-md hover:-translate-y-0.5"
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(`/events/${event.slug}`)}
+      onKeyDown={(e) => e.key === "Enter" && router.push(`/events/${event.slug}`)}
+      className="group flex flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white transition hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
     >
       {/* Banner image */}
       <div className="relative h-44 overflow-hidden bg-cream-100">
@@ -47,6 +55,13 @@ export function EventCard({ event, priority = false }: Props) {
             ⭐ Featured
           </span>
         )}
+
+        {/* Outside Bergen badge */}
+        {event.is_outside_bergen && (
+          <span className="absolute left-3 bottom-3 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-medium text-walnut">
+            📍 Outside Bergen
+          </span>
+        )}
       </div>
 
       {/* Content */}
@@ -76,8 +91,8 @@ export function EventCard({ event, priority = false }: Props) {
             {event.venue?.name ? (
               <a
                 href={`/venues/${(event.venue as { slug?: string }).slug ?? ""}`}
-                className="hover:text-brand-600 hover:underline"
-                onClick={(e) => e.stopPropagation()}
+                className="hover:text-accent-orange hover:underline"
+                onClick={(e) => e.stopPropagation()} // prevent card onClick from firing
               >
                 {event.venue.name}
                 {event.venue.city ? `, ${event.venue.city}` : ""}
@@ -98,6 +113,6 @@ export function EventCard({ event, priority = false }: Props) {
           <p className="mt-auto pt-3 text-xs font-medium text-walnut">{event.price_range}</p>
         )}
       </div>
-    </a>
+    </div>
   );
 }

@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getEventBySlug, getRelatedEvents } from "@/lib/events";
+import { getEventBySlug, getEventBySlugAdmin, getRelatedEvents } from "@/lib/events";
 import { buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
 import { AddToCalendar } from "@/components/AddToCalendar";
 import { ShareButtons } from "@/components/ShareButtons";
 import { formatEventDate, formatEventTime } from "@/lib/dates";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 // Revalidate event pages every hour
 export const revalidate = 3600;
 
 interface Props {
   params: { slug: string };
+  searchParams: { preview?: string };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -38,8 +40,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function EventPage({ params }: Props) {
-  const event = await getEventBySlug(params.slug);
+export default async function EventPage({ params, searchParams }: Props) {
+  const isPreview = searchParams.preview === "1";
+
+  // Draft preview: only allowed for authenticated admin users
+  let event = await getEventBySlug(params.slug);
+  if (!event && isPreview) {
+    const supabase = createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      event = await getEventBySlugAdmin(params.slug);
+    }
+  }
+
   if (!event) notFound();
 
   const relatedEvents = await getRelatedEvents(event);
@@ -62,6 +75,25 @@ export default async function EventPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
+      {/* Draft preview banner — only shown when accessed via ?preview=1 */}
+      {isPreview && event.status !== "published" && (
+        <div className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-yellow-800">
+            <span className="text-base">🔒</span>
+            <span>
+              <span className="font-semibold capitalize">{event.status}</span> — this event is not
+              publicly visible yet. Only admins can see this preview.
+            </span>
+          </div>
+          <a
+            href={`/admin/events/${event.id}/edit`}
+            className="shrink-0 rounded-lg bg-yellow-200 px-3 py-1.5 text-xs font-semibold text-yellow-900 hover:bg-yellow-300 transition-colors"
+          >
+            ← Back to edit
+          </a>
+        </div>
+      )}
+
       {/* Banner */}
       {event.banner_url && (
         <div className="relative mb-8 h-64 overflow-hidden rounded-2xl sm:h-80">
@@ -83,7 +115,7 @@ export default async function EventPage({ params }: Props) {
           {event.category && (
             <a
               href={`/categories/${event.category.slug}`}
-              className="inline-block mb-3 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700"
+              className="inline-block mb-3 rounded-full bg-cream-50 px-3 py-1 text-xs font-semibold text-navy-800"
             >
               {event.category.name}
             </a>
@@ -129,7 +161,7 @@ export default async function EventPage({ params }: Props) {
               href={event.external_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full rounded-xl bg-brand-600 px-6 py-4 text-center text-sm font-semibold text-white hover:bg-brand-700"
+              className="block w-full rounded-xl bg-navy-800 px-6 py-4 text-center text-sm font-semibold text-white hover:bg-navy-900"
             >
               Get Tickets / More Info →
             </a>
@@ -150,7 +182,7 @@ export default async function EventPage({ params }: Props) {
                 <span className="text-gray-500">Venue</span>
                 <a
                   href={`/venues/${(event.venue as { slug?: string }).slug ?? ""}`}
-                  className="font-medium text-right text-brand-600 hover:underline"
+                  className="font-medium text-right text-accent-orange hover:underline"
                 >
                   {event.venue.name}
                 </a>
@@ -163,7 +195,7 @@ export default async function EventPage({ params }: Props) {
                 <span className="text-gray-500">Area</span>
                 <a
                   href={`/neighborhoods/${event.neighborhood.slug}`}
-                  className="font-medium text-brand-600 hover:underline"
+                  className="font-medium text-accent-orange hover:underline"
                 >
                   {event.neighborhood.name}
                 </a>
@@ -193,7 +225,7 @@ export default async function EventPage({ params }: Props) {
           <div className="border-t border-gray-100 pt-4">
             <a
               href={`mailto:${process.env.ADMIN_EMAIL ?? "hi@bergenbeat.net"}?subject=${encodeURIComponent(`Suggest an edit: ${event.title}`)}&body=${encodeURIComponent(`Hi,\n\nI'd like to suggest an update to this event:\nhttps://www.bergenbeat.net/events/${event.slug}\n\nHere's what needs fixing:\n\n`)}`}
-              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-brand-600"
+              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-accent-orange"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

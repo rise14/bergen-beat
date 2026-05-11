@@ -29,9 +29,9 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
   },
-  verification: {
-    google: "9eOqTpmb1kK_HjXtw-PdRBTNApE1HcesLozFyQ9_kjc",
-  },
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
+    : {}),
   alternates: {
     types: {
       "application/rss+xml": [
@@ -50,6 +50,13 @@ export default function RootLayout({
 
   return (
     <html lang="en" className={lora.variable}>
+      <head>
+        {/* Preconnect to external image/tile domains so they resolve before first paint */}
+        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="preconnect" href="https://s1.ticketm.net" />
+        <link rel="preconnect" href="https://api.mapbox.com" />
+        <link rel="preconnect" href="https://events.mapbox.com" />
+      </head>
       <body>
         <script
           type="application/ld+json"
@@ -73,6 +80,7 @@ export default function RootLayout({
               <a href="/events"         className="text-sky hover:text-white transition-colors">Events</a>
               <a href="/categories"     className="text-sky hover:text-white transition-colors">Categories</a>
               <a href="/neighborhoods"  className="text-sky hover:text-white transition-colors">Neighborhoods</a>
+              <a href="/newsletter"     className="text-sky hover:text-white transition-colors">Newsletter</a>
               <a href="/submit"         className="text-accent-orange hover:text-white transition-colors font-medium">Submit Event</a>
             </nav>
           </div>

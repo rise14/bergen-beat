@@ -97,8 +97,20 @@ export default async function VenuePage({ params }: Props) {
         ← All venues
       </a>
 
+      {/* Hero image — uses <img> since domain is admin-entered and unpredictable */}
+      {venue.hero_url && (
+        <div className="mt-4 h-52 w-full overflow-hidden rounded-2xl sm:h-64">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={venue.hero_url}
+            alt={venue.name}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      )}
+
       {/* Header */}
-      <div className="mt-4 mb-8 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+      <div className={`${venue.hero_url ? "mt-6" : "mt-4"} mb-8 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between`}>
         <div>
           <h1 className="heading-rule font-serif text-3xl font-semibold text-navy-800">
             {venue.name}
@@ -130,6 +142,11 @@ export default async function VenuePage({ params }: Props) {
         )}
       </div>
 
+      {/* Description */}
+      {venue.description && (
+        <p className="mb-8 max-w-2xl text-walnut leading-relaxed">{venue.description}</p>
+      )}
+
       {/* Map */}
       {venue.lat && venue.lng && (
         <div className="mb-10 overflow-hidden rounded-2xl">
@@ -153,7 +170,7 @@ export default async function VenuePage({ params }: Props) {
         ) : (
           <div className="py-16 text-center text-gray-400">
             <p>No upcoming events at this venue.</p>
-            <a href="/events" className="mt-2 inline-block text-brand-600 hover:underline">
+            <a href="/events" className="mt-2 inline-block text-accent-orange hover:underline">
               Browse all events →
             </a>
           </div>

@@ -36,7 +36,7 @@ export function AddToCalendar({ event }: Props) {
           href={googleUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2.5 rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 transition-colors"
+          className="flex items-center gap-2.5 rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-700 hover:border-navy-600 hover:bg-cream-50 hover:text-navy-800 transition-colors"
         >
           {/* Google Calendar colour logo */}
           <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none">

@@ -29,7 +29,7 @@ export default async function VenuesPage() {
       {venues.length === 0 ? (
         <div className="py-16 text-center text-gray-400">
           <p>No venues with upcoming events right now.</p>
-          <a href="/events" className="mt-2 inline-block text-brand-600 hover:underline">
+          <a href="/events" className="mt-2 inline-block text-accent-orange hover:underline">
             Browse all events →
           </a>
         </div>
@@ -42,7 +42,7 @@ export default async function VenuesPage() {
               className="group flex flex-col rounded-2xl border border-cream-200 bg-white p-5 transition hover:shadow-md hover:-translate-y-0.5"
             >
               <div className="flex items-start justify-between gap-2">
-                <h2 className="font-serif text-base font-semibold text-navy-800 group-hover:text-brand-600 transition-colors leading-snug">
+                <h2 className="font-serif text-base font-semibold text-navy-800 group-hover:text-accent-orange transition-colors leading-snug">
                   {venue.name}
                 </h2>
                 <span className="shrink-0 rounded-full bg-cream px-2.5 py-0.5 text-xs font-medium text-walnut border border-cream-200">
@@ -62,7 +62,7 @@ export default async function VenuesPage() {
                 </p>
               )}
 
-              <p className="mt-auto pt-4 text-xs font-medium text-brand-600">
+              <p className="mt-auto pt-4 text-xs font-medium text-accent-orange">
                 See upcoming events →
               </p>
             </a>

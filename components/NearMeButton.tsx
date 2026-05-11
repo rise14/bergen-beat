@@ -56,7 +56,7 @@ export function NearMeButton({ active }: Props) {
   if (active) {
     return (
       <div className="flex items-center gap-1.5">
-        <span className="flex items-center gap-1.5 rounded-full bg-brand-600 px-3 py-1.5 text-sm font-medium text-white">
+        <span className="flex items-center gap-1.5 rounded-full bg-navy-800 px-3 py-1.5 text-sm font-medium text-white">
           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
           </svg>
@@ -78,7 +78,7 @@ export function NearMeButton({ active }: Props) {
       <button
         onClick={activate}
         disabled={loading}
-        className="flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50 transition-colors"
+        className="flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:border-navy-600 hover:bg-cream-50 hover:text-navy-800 disabled:opacity-50 transition-colors"
       >
         {loading ? (
           <>

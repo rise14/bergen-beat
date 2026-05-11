@@ -10,6 +10,8 @@ export default function AdminLayout({
     { href: "/admin/events", label: "Events" },
     { href: "/admin/events/new", label: "＋ New Event" },
     { href: "/admin/import", label: "Import Events" },
+    { href: "/admin/venues", label: "Venues" },
+    { href: "/admin/neighborhoods", label: "Neighborhoods" },
     { href: "/admin/subscribers", label: "Subscribers" },
   ];
 
@@ -25,7 +27,7 @@ export default function AdminLayout({
             <a
               key={link.href}
               href={link.href}
-              className="rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand-600"
+              className="rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-accent-orange"
             >
               {link.label}
             </a>

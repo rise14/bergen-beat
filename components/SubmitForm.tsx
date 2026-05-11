@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import type { Category } from "@/types";
+import { ImageUpload } from "@/components/ImageUpload";
 
 interface Props {
   categories: Category[];
 }
 
 const inputClass =
-  "w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none";
+  "w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-700 focus:outline-none";
 
 function Field({
   label,
@@ -36,61 +37,7 @@ export function SubmitForm({ categories }: Props) {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Image upload state
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageStatus, setImageStatus] = useState<"idle" | "uploading" | "done" | "error">("idle");
-  const [imageError, setImageError] = useState("");
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  async function uploadFile(file: File) {
-    const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
-    const MAX = 5 * 1024 * 1024;
-
-    if (!ALLOWED.includes(file.type)) {
-      setImageError("Only JPEG, PNG, or WebP images are allowed.");
-      setImageStatus("error");
-      return;
-    }
-    if (file.size > MAX) {
-      setImageError("Image must be 5 MB or smaller.");
-      setImageStatus("error");
-      return;
-    }
-
-    setImageStatus("uploading");
-    setImageError("");
-
-    const body = new FormData();
-    body.append("file", file);
-
-    try {
-      const res = await fetch("/api/upload", { method: "POST", body });
-      const data = await res.json();
-      if (!res.ok) {
-        setImageError(data.error ?? "Upload failed.");
-        setImageStatus("error");
-      } else {
-        setImageUrl(data.url);
-        setImageStatus("done");
-      }
-    } catch {
-      setImageError("Upload failed. Please try again.");
-      setImageStatus("error");
-    }
-  }
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) uploadFile(file);
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) uploadFile(file);
-  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -185,80 +132,12 @@ export function SubmitForm({ categories }: Props) {
             className={inputClass} placeholder="https://…" />
         </Field>
 
-        {/* Banner image upload */}
-        <div>
-          <p className="mb-1 block text-sm font-medium text-gray-700">
-            Event photo <span className="font-normal text-gray-400">(optional)</span>
-          </p>
-
-          {imageStatus === "done" && imageUrl ? (
-            /* Preview */
-            <div className="relative overflow-hidden rounded-xl border border-gray-200">
-              <img
-                src={imageUrl}
-                alt="Event banner preview"
-                className="h-48 w-full object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setImageUrl(null);
-                  setImageStatus("idle");
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
-                className="absolute right-2 top-2 rounded-full bg-black/50 px-2 py-1 text-xs text-white hover:bg-black/70"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            /* Drop zone */
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-sm transition-colors ${
-                dragOver
-                  ? "border-brand-400 bg-brand-50"
-                  : "border-gray-200 hover:border-brand-300 hover:bg-gray-50"
-              }`}
-            >
-              {imageStatus === "uploading" ? (
-                <>
-                  <svg className="h-5 w-5 animate-spin text-brand-500" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  <span className="text-gray-500">Uploading…</span>
-                </>
-              ) : (
-                <>
-                  <svg className="h-8 w-8 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                  </svg>
-                  <span className="font-medium text-gray-600">
-                    Click to upload or drag and drop
-                  </span>
-                  <span className="text-xs text-gray-400">JPEG, PNG or WebP · max 5 MB</span>
-                </>
-              )}
-            </div>
-          )}
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-
-          {imageStatus === "error" && (
-            <p className="mt-1 text-xs text-red-600">{imageError}</p>
-          )}
-        </div>
+        <ImageUpload
+          name="_banner_upload"
+          onUrlChange={(url) => setImageUrl(url || null)}
+          showUrlFallback={false}
+          label="Event photo"
+        />
       </fieldset>
 
       {/* Date & time */}
@@ -300,11 +179,11 @@ export function SubmitForm({ categories }: Props) {
         </legend>
         <div className="flex gap-4">
           <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input type="radio" name="is_free" value="true" defaultChecked className="accent-brand-600" />
+            <input type="radio" name="is_free" value="true" defaultChecked className="accent-navy-800" />
             Free
           </label>
           <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input type="radio" name="is_free" value="false" className="accent-brand-600" />
+            <input type="radio" name="is_free" value="false" className="accent-navy-800" />
             Paid
           </label>
         </div>
@@ -338,8 +217,8 @@ export function SubmitForm({ categories }: Props) {
 
       <button
         type="submit"
-        disabled={status === "loading" || imageStatus === "uploading"}
-        className="w-full rounded-xl bg-brand-600 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+        disabled={status === "loading"}
+        className="w-full rounded-xl bg-navy-800 py-3 text-sm font-semibold text-white hover:bg-navy-900 disabled:opacity-60"
       >
         {status === "loading" ? "Submitting…" : "Submit event"}
       </button>
