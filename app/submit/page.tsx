@@ -14,10 +14,14 @@ export default async function SubmitPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Submit an Event</h1>
-        <p className="mt-2 text-gray-500">
+        <h1 className="heading-rule font-serif text-3xl font-semibold text-navy-800">
+          Submit an Event
+        </h1>
+        <p className="mt-3 text-sm text-walnut leading-relaxed">
           Know about something great happening in Bergen County? Tell us about it.
-          We review every submission and publish approved events within 2 business days.
+          We review every submission and publish approved events within{" "}
+          <strong className="text-navy-800">2 business days</strong>.
+          You&apos;ll get an email with a private link to edit your listing any time.
         </p>
       </div>
 

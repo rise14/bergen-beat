@@ -20,6 +20,7 @@ export default async function AdminDashboardPage() {
     { count: archivedEvents },
     { count: pendingSubmissions },
     { count: subscribers },
+    { count: newSubscribers },
     { count: recentImports },
     { data: recentlyAdded },
     { data: upcomingList },
@@ -33,6 +34,7 @@ export default async function AdminDashboardPage() {
     supabase.from("events").select("*", { count: "exact", head: true }).eq("status", "archived"),
     supabase.from("event_submissions").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("newsletter_subscribers").select("*", { count: "exact", head: true }).eq("confirmed", true),
+    supabase.from("newsletter_subscribers").select("*", { count: "exact", head: true }).eq("confirmed", true).gte("subscribed_at", sevenDaysAgo),
     supabase.from("import_log").select("*", { count: "exact", head: true }).eq("status", "imported").gte("imported_at", sevenDaysAgo),
     supabase.from("events").select("id, title, slug, status, source, start_date, created_at").order("created_at", { ascending: false }).limit(5),
     supabase.from("events").select("id, title, slug, start_date, venue:venues(name, city)").eq("status", "published").gte("start_date", now).lte("start_date", endOfWeek).order("start_date", { ascending: true }).limit(5),
@@ -96,12 +98,12 @@ export default async function AdminDashboardPage() {
   }
 
   const topStats = [
-    { label: "Upcoming events",     value: upcomingEvents      ?? 0, href: "/admin/events?status=published", color: "text-accent-orange" },
-    { label: "Drafts to review",    value: draftEvents         ?? 0, href: "/admin/events?status=draft",    color: (draftEvents ?? 0) > 0 ? "text-amber-600" : "text-gray-900", urgent: (draftEvents ?? 0) > 0 },
-    { label: "Pending submissions", value: pendingSubmissions  ?? 0, href: "/admin/submissions",             color: (pendingSubmissions ?? 0) > 0 ? "text-amber-600" : "text-gray-900", urgent: (pendingSubmissions ?? 0) > 0 },
-    { label: "Subscribers",         value: subscribers         ?? 0, href: null, color: "text-gray-900" },
-    { label: "Imported (7 days)",   value: recentImports       ?? 0, href: null, color: "text-gray-900" },
-    { label: "Total events",        value: totalEvents         ?? 0, href: "/admin/events", color: "text-gray-900" },
+    { label: "Upcoming events",     value: upcomingEvents      ?? 0, href: "/admin/events?status=published", color: "text-accent-orange", sub: null },
+    { label: "Drafts to review",    value: draftEvents         ?? 0, href: "/admin/events?status=draft",    color: (draftEvents ?? 0) > 0 ? "text-amber-600" : "text-gray-900", urgent: (draftEvents ?? 0) > 0, sub: null },
+    { label: "Pending submissions", value: pendingSubmissions  ?? 0, href: "/admin/submissions",             color: (pendingSubmissions ?? 0) > 0 ? "text-amber-600" : "text-gray-900", urgent: (pendingSubmissions ?? 0) > 0, sub: null },
+    { label: "Subscribers",         value: subscribers         ?? 0, href: null, color: "text-gray-900", sub: (newSubscribers ?? 0) > 0 ? `+${newSubscribers} this week` : null },
+    { label: "Imported (7 days)",   value: recentImports       ?? 0, href: null, color: "text-gray-900", sub: null },
+    { label: "Total events",        value: totalEvents         ?? 0, href: "/admin/events", color: "text-gray-900", sub: null },
   ];
 
   return (
@@ -132,6 +134,9 @@ export default async function AdminDashboardPage() {
               </a>
             ) : (
               <p className={`mt-1 text-3xl font-bold ${stat.color}`}>{stat.value}</p>
+            )}
+            {stat.sub && (
+              <p className="mt-1 text-xs font-medium text-green-600">{stat.sub}</p>
             )}
           </div>
         ))}

@@ -138,14 +138,30 @@ export async function sendSubmissionApproved({
   organizerName,
   eventTitle,
   eventSlug,
+  editToken,
 }: {
   to: string;
   organizerName: string;
   eventTitle: string;
   eventSlug: string;
+  editToken?: string | null;
 }) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
   const resend = getResend();
+  const editSection = editToken
+    ? `
+        <p style="margin:16px 0 0;font-size:14px;color:#374151;line-height:1.6;">
+          Need to update the details? You can edit your event at any time using this private link:
+        </p>
+        <a href="${siteUrl}/edit-event/${editToken}"
+          style="display:inline-block;margin-top:10px;background:#f3f4f6;color:#1e3a5f;font-size:14px;font-weight:600;padding:10px 20px;border-radius:8px;text-decoration:none;border:1px solid #d1d5db;">
+          ✏️ Edit your event →
+        </a>
+        <p style="margin:10px 0 0;font-size:12px;color:#9ca3af;">
+          Keep this link safe — anyone with it can edit your event listing.
+        </p>`
+    : "";
+
   await resend.emails.send({
     from: FROM_ADDRESS,
     to,
@@ -163,7 +179,8 @@ export async function sendSubmissionApproved({
         <a href="${siteUrl}/events/${eventSlug}"
           style="display:inline-block;background:#e05a2b;color:#fff;font-size:14px;font-weight:600;padding:11px 22px;border-radius:8px;text-decoration:none;">
           View your event →
-        </a>`,
+        </a>
+        ${editSection}`,
     }),
   });
 }
@@ -495,4 +512,155 @@ export async function sendWeekendDigest({
   }
 
   return { sent, skipped: false };
+}
+
+// ─── Wednesday "This week" digest ─────────────────────────────────────────────
+
+export async function sendWednesdayDigest({
+  subscribers,
+  events,
+  weekLabel,
+}: {
+  subscribers: { email: string; token: string }[];
+  events: DigestEvent[];
+  weekLabel: string; // e.g. "May 13–19"
+}) {
+  if (!subscribers.length || !events.length) return { sent: 0, skipped: true };
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+  const resend = getResend();
+
+  const eventsHtml = events.map((e) => eventCard(e, siteUrl)).join("");
+
+  const htmlTemplate = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:32px 16px;">
+    <tr><td>
+      <table width="600" align="center" cellpadding="0" cellspacing="0"
+        style="max-width:600px;width:100%;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+
+        <!-- Header — navy for mid-week -->
+        <tr>
+          <td style="background:#1e3a5f;padding:28px 32px;text-align:center;">
+            <h1 style="margin:0;color:#fff;font-size:24px;font-weight:800;letter-spacing:-0.02em;">
+              🎵 Bergen Beat
+            </h1>
+            <p style="margin:6px 0 0;color:#a8c4e0;font-size:14px;">
+              What's happening this week — ${weekLabel}
+            </p>
+          </td>
+        </tr>
+
+        <!-- Events -->
+        <tr>
+          <td style="padding:24px 32px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              ${eventsHtml}
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td style="padding:0 32px 32px;text-align:center;">
+            <a href="${siteUrl}/events"
+              style="display:inline-block;background:#f3f4f6;color:#374151;font-size:14px;font-weight:600;padding:12px 24px;border-radius:8px;text-decoration:none;">
+              See all upcoming events →
+            </a>
+          </td>
+        </tr>
+
+        __FOOTER__
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  let sent = 0;
+  for (const sub of subscribers) {
+    try {
+      const html = htmlTemplate.replace("__FOOTER__", digestFooter(siteUrl, sub.token));
+      await resend.emails.send({
+        from: FROM_ADDRESS,
+        to: sub.email,
+        subject: `🎵 This week in Bergen County — ${weekLabel}`,
+        html,
+      });
+      sent++;
+    } catch (err) {
+      console.error(`Failed to send Wednesday digest to ${sub.email}:`, err);
+    }
+  }
+
+  return { sent, skipped: false };
+}
+
+// ─── Event alert (new event published matching subscriber preferences) ────────
+
+export async function sendEventAlert({
+  to,
+  token,
+  event,
+}: {
+  to: string;
+  token: string;
+  event: DigestEvent & { slug: string };
+}) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+  const resend = getResend();
+
+  const url = `${siteUrl}/events/${event.slug}`;
+  const date = formatDigestDate(event.start_date);
+  const price = event.is_free ? "Free" : (event.price_range ?? "Paid");
+  const venue = event.venue?.name ?? "";
+  const city  = event.venue?.city ? `, ${event.venue.city}` : "";
+  const categoryLabel = event.category
+    ? `${event.category.icon ?? ""} ${event.category.name}`
+    : "";
+
+  const prefsUrl = `${siteUrl}/preferences?token=${encodeURIComponent(token)}`;
+  const unsubUrl = `${siteUrl}/api/unsubscribe?token=${encodeURIComponent(token)}`;
+
+  const subject = categoryLabel
+    ? `New ${event.category!.name} event: ${event.title}`
+    : `New event in Bergen County: ${event.title}`;
+
+  const html = transactionalEmail({
+    siteUrl,
+    body: `
+      <p style="margin:0 0 4px;font-size:12px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">
+        ${categoryLabel || "New event"}
+      </p>
+      <h2 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#111827;">
+        <a href="${url}" style="color:#111827;text-decoration:none;">${event.title}</a>
+      </h2>
+      <p style="margin:0 0 4px;font-size:14px;color:#6b7280;">
+        📅 ${date}${venue ? ` &nbsp;·&nbsp; 📍 ${venue}${city}` : ""}
+      </p>
+      <p style="margin:0 0 12px;font-size:13px;color:#9ca3af;">${price}</p>
+      ${event.short_description
+        ? `<p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">${event.short_description}</p>`
+        : ""}
+      ${event.banner_url
+        ? `<a href="${url}"><img src="${event.banner_url}" alt="${event.title}"
+             style="width:100%;max-height:240px;object-fit:cover;border-radius:8px;display:block;margin-bottom:16px;" /></a>`
+        : ""}
+      <a href="${url}"
+        style="display:inline-block;background:#e05a2b;color:#fff;font-size:14px;font-weight:600;padding:11px 22px;border-radius:8px;text-decoration:none;">
+        View event →
+      </a>
+      <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;">
+        You received this because you subscribed to event alerts on Bergen Beat.
+        <a href="${prefsUrl}" style="color:#6366f1;">Manage preferences</a>
+        &nbsp;·&nbsp;
+        <a href="${unsubUrl}" style="color:#9ca3af;">Unsubscribe</a>
+      </p>`,
+  });
+
+  await resend.emails.send({ from: FROM_ADDRESS, to, subject, html });
 }

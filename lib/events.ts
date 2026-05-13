@@ -76,14 +76,23 @@ export async function getPublishedEvents(
     .gte("start_date", new Date().toISOString())
     .order("start_date", { ascending: true });
 
-  if (filters.categorySlug) {
-    const { data: cat } = await supabase
+  // Multi-category filter (takes precedence over single categorySlug)
+  const slugsToFilter = filters.categorySlugs?.length
+    ? filters.categorySlugs
+    : filters.categorySlug
+    ? [filters.categorySlug]
+    : [];
+
+  if (slugsToFilter.length > 0) {
+    const { data: cats } = await supabase
       .from("categories")
       .select("id")
-      .eq("slug", filters.categorySlug)
-      .single();
-    if (cat) query = query.eq("category_id", cat.id);
-    else return { events: [], total: 0, page, pageSize, totalPages: 0 };
+      .in("slug", slugsToFilter);
+    const ids = (cats ?? []).map((c) => c.id);
+    if (ids.length === 0) return { events: [], total: 0, page, pageSize, totalPages: 0 };
+    query = ids.length === 1
+      ? query.eq("category_id", ids[0])
+      : query.in("category_id", ids);
   }
 
   if (filters.neighborhoodSlug) {

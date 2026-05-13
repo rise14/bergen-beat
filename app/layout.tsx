@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Lora } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
-import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { GoogleTagManager, GoogleTagManagerNoscript } from "@/components/GoogleAnalytics";
 import { buildOrganizationJsonLd } from "@/lib/seo";
 
 const lora = Lora({
@@ -58,11 +58,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://events.mapbox.com" />
       </head>
       <body>
+        {/* GTM noscript fallback — must be first child of <body> */}
+        <GoogleTagManagerNoscript />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
-        <GoogleAnalytics />
+        <GoogleTagManager />
         <SiteHeader />
 
         <main className="mx-auto max-w-6xl px-4 py-8">
@@ -77,7 +79,12 @@ export default function RootLayout({
               <p className="mt-1 text-xs text-sky">Events in Bergen County, NJ</p>
             </div>
             <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-              <a href="/events"         className="text-sky hover:text-white transition-colors">Events</a>
+              <a href="/events"          className="text-sky hover:text-white transition-colors">Events</a>
+              <a href="/events/today"   className="text-sky hover:text-white transition-colors">Today</a>
+              <a href="/this-weekend"   className="text-sky hover:text-white transition-colors">This Weekend</a>
+              <a href="/events/free"    className="text-sky hover:text-white transition-colors">Free Events</a>
+              <a href="/events/kids"    className="text-sky hover:text-white transition-colors">Kids &amp; Family</a>
+              <a href="/events/outdoor" className="text-sky hover:text-white transition-colors">Outdoor</a>
               <a href="/categories"     className="text-sky hover:text-white transition-colors">Categories</a>
               <a href="/neighborhoods"  className="text-sky hover:text-white transition-colors">Neighborhoods</a>
               <a href="/newsletter"     className="text-sky hover:text-white transition-colors">Newsletter</a>

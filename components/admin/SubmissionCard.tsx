@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { approveSubmission, rejectSubmission, updateSubmission } from "@/app/admin/actions";
+import { approveSubmission, rejectSubmission, updateSubmission, resendEditLink } from "@/app/admin/actions";
 
 interface Category {
   id: string;
@@ -26,6 +26,7 @@ export interface SubmissionRow {
   is_free: boolean;
   price_range: string | null;
   category_id: string | null;
+  edit_token: string | null;
 }
 
 interface Props {
@@ -143,6 +144,24 @@ export function SubmissionCard({ submission: s, categories, compact = false, hig
 
           {s.admin_notes && (
             <p className="mt-3 text-sm italic text-gray-400">Note: {s.admin_notes}</p>
+          )}
+
+          {/* Re-send edit link — only for approved submissions with an edit token */}
+          {!compact && s.status === "approved" && s.edit_token && (
+            <div className="mt-4 border-t border-gray-100 pt-4">
+              <form action={resendEditLink}>
+                <input type="hidden" name="submission_id" value={s.id} />
+                <button
+                  type="submit"
+                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-accent-orange transition-colors"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Re-send edit link to organizer
+                </button>
+              </form>
+            </div>
           )}
         </>
       )}

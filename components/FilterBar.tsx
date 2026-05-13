@@ -4,12 +4,13 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useRef } from "react";
 import type { Category, Neighborhood } from "@/types";
 import { NearMeButton } from "@/components/NearMeButton";
+import { CategoryMultiSelect } from "@/components/CategoryMultiSelect";
 
 interface Props {
   categories: Category[];
   neighborhoods: Neighborhood[];
   currentFilters: {
-    category?: string;
+    category?: string;   // comma-separated slugs
     neighborhood?: string;
     date?: string;
     free?: string;
@@ -36,6 +37,11 @@ export function FilterBar({ categories, neighborhoods, currentFilters, showViewT
   const searchParams = useSearchParams();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Parse comma-separated category slugs from URL
+  const selectedCategories = currentFilters.category
+    ? currentFilters.category.split(",").filter(Boolean)
+    : [];
+
   function updateFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
     if (value) {
@@ -45,6 +51,10 @@ export function FilterBar({ categories, neighborhoods, currentFilters, showViewT
     }
     params.delete("page");
     router.push(`${pathname}?${params.toString()}`);
+  }
+
+  function updateCategories(slugs: string[]) {
+    updateFilter("category", slugs.join(","));
   }
 
   function submitSearch(value: string) {
@@ -149,20 +159,13 @@ export function FilterBar({ categories, neighborhoods, currentFilters, showViewT
         })}
       </div>
 
-      {/* Row 3: dropdowns + free + near me */}
+      {/* Row 3: dropdowns + toggles */}
       <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={currentFilters.category ?? ""}
-          onChange={(e) => updateFilter("category", e.target.value)}
-          className="rounded-lg border border-cream-200 bg-white px-3 py-2 text-sm text-navy-800 focus:border-navy-800 focus:outline-none"
-        >
-          <option value="">All categories</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.slug}>
-              {cat.icon} {cat.name}
-            </option>
-          ))}
-        </select>
+        <CategoryMultiSelect
+          categories={categories}
+          selected={selectedCategories}
+          onChange={updateCategories}
+        />
 
         <select
           value={currentFilters.neighborhood ?? ""}

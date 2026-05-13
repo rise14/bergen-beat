@@ -7,6 +7,7 @@ import { EventsMapView } from "@/components/EventsMapView";
 import { getPublishedEvents } from "@/lib/events";
 import { getCategories } from "@/lib/categories";
 import { getNeighborhoods } from "@/lib/neighborhoods";
+import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
 
@@ -46,9 +47,14 @@ export default async function EventsPage({ searchParams }: Props) {
   const userLng = searchParams.lng ? parseFloat(searchParams.lng) : undefined;
   const radiusMiles = searchParams.radius ? parseFloat(searchParams.radius) : undefined;
 
+  // Parse comma-separated category slugs
+  const categorySlugs = searchParams.category
+    ? searchParams.category.split(",").filter(Boolean)
+    : undefined;
+
   const [result, categories, neighborhoods] = await Promise.all([
     getPublishedEvents({
-      categorySlug:     searchParams.category,
+      categorySlugs,
       neighborhoodSlug: searchParams.neighborhood,
       dateFilter:       searchParams.date as EventFilters["dateFilter"],
       freeOnly:         searchParams.free === "true",
@@ -125,6 +131,14 @@ export default async function EventsPage({ searchParams }: Props) {
             </a>
           </div>
         )}
+      </div>
+
+      {/* Subscribe nudge — shown after first page of results */}
+      {!isMapView && events.length > 0 && page === 1 && (
+        <div className="mt-10">
+          <NewsletterSubscribeBar variant="inline" />
+        </div>
+      )}
       </div>
     </>
   );

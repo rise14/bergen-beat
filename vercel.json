@@ -9,6 +9,10 @@
       "schedule": "0 16 * * 4"
     },
     {
+      "path": "/api/cron/wednesday-digest",
+      "schedule": "0 17 * * 3"
+    },
+    {
       "path": "/api/cron/weekend-digest",
       "schedule": "0 12 * * 5"
     },

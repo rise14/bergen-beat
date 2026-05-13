@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
-import { sendSubmissionApproved, sendSubmissionRejected } from "@/lib/email";
+import { sendSubmissionApproved, sendSubmissionRejected, sendEventAlert } from "@/lib/email";
+import { fireEventWebhook } from "@/lib/webhook";
 
 // ─── Slug helper ──────────────────────────────────────────────────────────────
 
@@ -243,18 +244,92 @@ export async function approveSubmission(formData: FormData) {
   if (insertError) throw new Error(`Failed to create event: ${insertError.message}`);
 
   // Mark the submission as approved
-  await supabase
+  const { data: updatedSub } = await supabase
     .from("event_submissions")
     .update({ status: "approved", reviewed_at: new Date().toISOString() })
-    .eq("id", submissionId);
+    .eq("id", submissionId)
+    .select("edit_token")
+    .single();
 
-  // Email the organizer
+  // Email the organizer (include edit link if we got the token)
   await sendSubmissionApproved({
     to:            sub.organizer_email,
     organizerName: sub.organizer_name,
     eventTitle:    sub.title,
     eventSlug:     slug,
+    editToken:     updatedSub?.edit_token ?? null,
   });
+
+  // Fetch the newly created event + its category/venue for alerts & webhook
+  const { data: newEvent } = await supabase
+    .from("events")
+    .select(`
+      id, title, slug, start_date, end_date, is_free, price_range,
+      short_description, banner_url, organizer_name,
+      category:categories(id, name, slug, icon),
+      venue:venues(name, city)
+    `)
+    .eq("slug", slug)
+    .single();
+
+  if (newEvent) {
+    const cat  = newEvent.category as unknown as { id: string; name: string; slug: string; icon: string | null } | null;
+    const ven  = newEvent.venue    as unknown as { name: string; city: string | null } | null;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+
+    // ── Social webhook ──────────────────────────────────────────────────────
+    await fireEventWebhook({
+      event_title:       newEvent.title,
+      event_url:         `${siteUrl}/events/${newEvent.slug}`,
+      event_slug:        newEvent.slug,
+      start_date:        newEvent.start_date,
+      end_date:          newEvent.end_date,
+      is_free:           newEvent.is_free,
+      price_range:       newEvent.price_range,
+      short_description: newEvent.short_description,
+      banner_url:        newEvent.banner_url,
+      venue_name:        ven?.name ?? null,
+      venue_city:        ven?.city ?? null,
+      category_name:     cat?.name ?? null,
+      category_icon:     cat?.icon ?? null,
+      organizer_name:    newEvent.organizer_name,
+    });
+
+    // ── Event alerts ─────────────────────────────────────────────────────────
+    // Find confirmed subscribers who have this category or neighborhood in prefs
+    const { data: alertSubs } = await supabase
+      .from("newsletter_subscribers")
+      .select("email, token, preferences")
+      .eq("confirmed", true)
+      .is("unsubscribed_at", null);
+
+    if (alertSubs?.length && cat) {
+      const eligibleAlerts = alertSubs.filter((s) => {
+        const prefs = (s.preferences as { categories?: string[] } | null) ?? {};
+        return prefs.categories?.includes(cat.slug);
+      });
+
+      for (const sub of eligibleAlerts) {
+        await sendEventAlert({
+          to:    sub.email,
+          token: sub.token,
+          event: {
+            title:             newEvent.title,
+            slug:              newEvent.slug,
+            start_date:        newEvent.start_date,
+            is_free:           newEvent.is_free,
+            price_range:       newEvent.price_range,
+            banner_url:        newEvent.banner_url,
+            short_description: newEvent.short_description,
+            venue:             ven,
+            category:          cat,
+          },
+        }).catch((err) =>
+          console.error(`[approveSubmission] Alert to ${sub.email} failed:`, err)
+        );
+      }
+    }
+  }
 
   revalidatePath("/");
   revalidatePath("/events");
@@ -368,6 +443,45 @@ export async function deleteSubscriber(id: string): Promise<void> {
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/subscribers");
+}
+
+// ─── Re-send organizer edit link ──────────────────────────────────────────────
+
+export async function resendEditLink(formData: FormData): Promise<void> {
+  const submissionId = formData.get("submission_id") as string;
+  if (!submissionId) throw new Error("Missing submission_id");
+
+  const supabase = createAdminSupabaseClient();
+
+  // Fetch submission + edit_token
+  const { data: sub } = await supabase
+    .from("event_submissions")
+    .select("id, edit_token, organizer_email, organizer_name, title")
+    .eq("id", submissionId)
+    .single();
+
+  if (!sub) throw new Error("Submission not found");
+  if (!sub.edit_token) throw new Error("No edit token found for this submission");
+
+  // Find the linked published event's slug
+  const { data: event } = await supabase
+    .from("events")
+    .select("slug")
+    .eq("submission_id", sub.id)
+    .single();
+
+  if (!event) throw new Error("No published event linked to this submission");
+
+  await sendSubmissionApproved({
+    to:            sub.organizer_email,
+    organizerName: sub.organizer_name,
+    eventTitle:    sub.title,
+    eventSlug:     event.slug,
+    editToken:     sub.edit_token,
+  });
+
+  revalidatePath("/admin/submissions");
+  redirect("/admin/submissions?resentedit=1");
 }
 
 // ─── Archive past events ──────────────────────────────────────────────────────

@@ -145,7 +145,8 @@ export interface ImportedEvent {
 // ─── Filter params used on the /events browse page ───────────────────────────
 
 export interface EventFilters {
-  categorySlug?: string;
+  categorySlug?: string;   // single (legacy)
+  categorySlugs?: string[]; // multi-select
   neighborhoodSlug?: string;
   dateFilter?: "today" | "this-weekend" | "this-week" | "this-month";
   freeOnly?: boolean;

@@ -7,6 +7,7 @@ import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
 import { AddToCalendar } from "@/components/AddToCalendar";
 import { ShareButtons } from "@/components/ShareButtons";
+import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
 import { formatEventDate, formatEventTime } from "@/lib/dates";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -227,6 +228,9 @@ export default async function EventPage({ params, searchParams }: Props) {
               label={event.venue.name}
             />
           )}
+
+          {/* Newsletter subscribe */}
+          <NewsletterSubscribeBar variant="card" />
 
           {/* Suggest an edit */}
           <div className="border-t border-gray-100 pt-4">
