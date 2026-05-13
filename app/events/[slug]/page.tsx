@@ -9,7 +9,8 @@ import { AddToCalendar } from "@/components/AddToCalendar";
 import { ShareButtons } from "@/components/ShareButtons";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
 import { formatEventDate, formatEventTime } from "@/lib/dates";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
+import type { Event } from "@/types";
 
 // Revalidate event pages every hour
 export const revalidate = 3600;
@@ -57,6 +58,31 @@ export default async function EventPage({ params, searchParams }: Props) {
   if (!event) notFound();
 
   const relatedEvents = await getRelatedEvents(event);
+
+  // Fetch "more in this neighborhood" (up to 4, excluding current event)
+  const neighborhoodId = event.neighborhood_id;
+  let neighborhoodEvents: Event[] = [];
+  if (neighborhoodId) {
+    const admin = createAdminSupabaseClient();
+    const { data: nbEvents } = await admin
+      .from("events")
+      .select(`
+        id, title, slug, short_description, start_date, end_date,
+        is_free, price_range, banner_url, featured, is_recurring, recurrence_note,
+        is_sponsored,
+        category:categories(id, name, slug, icon, color),
+        neighborhood:neighborhoods(id, name, slug),
+        venue:venues(id, slug, name, city, lat, lng)
+      `)
+      .eq("status", "published")
+      .eq("neighborhood_id", neighborhoodId)
+      .neq("id", event.id)
+      .gte("start_date", new Date().toISOString())
+      .order("start_date", { ascending: true })
+      .limit(4);
+    neighborhoodEvents = (nbEvents ?? []) as unknown as Event[];
+  }
+
   const jsonLd = buildEventJsonLd(event);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: "Home", href: "/" },
@@ -252,6 +278,24 @@ export default async function EventPage({ params, searchParams }: Props) {
         <section className="mt-16">
           <h2 className="mb-6 text-2xl font-bold text-gray-900">More events like this</h2>
           <EventGrid events={relatedEvents} />
+        </section>
+      )}
+
+      {/* More in this neighborhood */}
+      {neighborhoodEvents.length > 0 && event.neighborhood && (
+        <section className="mt-16">
+          <div className="mb-6 flex items-end justify-between">
+            <h2 className="text-2xl font-bold text-gray-900">
+              More in {(event.neighborhood as { name: string }).name}
+            </h2>
+            <a
+              href={`/neighborhoods/${(event.neighborhood as { slug: string }).slug}`}
+              className="text-sm font-medium text-accent-orange hover:underline"
+            >
+              See all →
+            </a>
+          </div>
+          <EventGrid events={neighborhoodEvents} />
         </section>
       )}
     </>

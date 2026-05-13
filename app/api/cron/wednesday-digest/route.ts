@@ -109,6 +109,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: "No events this week", sent: 0 });
   }
 
+  // Fetch the current sponsored event (earliest upcoming sponsored event)
+  const { data: sponsoredRow } = await supabase
+    .from("events")
+    .select(`
+      title, slug, start_date, is_free, price_range, banner_url, short_description,
+      venue:venues(name, city),
+      category:categories(name, slug, icon)
+    `)
+    .eq("status", "published")
+    .eq("is_sponsored", true)
+    .gte("start_date", start)
+    .order("start_date", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const sponsoredEvent = sponsoredRow
+    ? (sponsoredRow as unknown as {
+        title: string; slug: string; start_date: string; is_free: boolean;
+        price_range: string | null; banner_url: string | null; short_description: string | null;
+        venue: { name: string; city: string | null } | null;
+        category: { name: string; slug: string; icon: string | null } | null;
+      })
+    : null;
+
   let totalSent = 0;
 
   for (const sub of eligible) {
@@ -130,6 +154,7 @@ export async function GET(req: NextRequest) {
       subscribers: [{ email: sub.email, token: sub.token }],
       events: filtered,
       weekLabel: label,
+      sponsoredEvent,
     });
     totalSent += result.sent;
   }

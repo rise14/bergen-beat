@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import type { EventFilters } from "@/types";
 import Image from "next/image";
 import { EventGrid } from "@/components/EventGrid";
-import { FeaturedHero } from "@/components/FeaturedHero";
 import { CategoryPill } from "@/components/CategoryPill";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { getFeaturedEvents, getUpcomingEvents, getPublishedEvents } from "@/lib/events";
 import { getCategories } from "@/lib/categories";
 import { buildWebSiteJsonLd } from "@/lib/seo";
+import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
 
@@ -126,9 +126,9 @@ export default async function HomePage({ searchParams }: Props) {
         </div>
       </section>
 
-      {/* ── Featured events hero ─────────────────────────────── */}
+      {/* ── Featured events carousel ─────────────────────────── */}
       {!isFiltered && featuredEvents.length > 0 && (
-        <FeaturedHero events={featuredEvents} />
+        <FeaturedCarousel events={featuredEvents} />
       )}
 
       {/* ── Upcoming / filtered events ───────────────────────── */}

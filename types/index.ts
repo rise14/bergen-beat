@@ -58,6 +58,8 @@ export interface Event {
   organizer_name: string | null;
   organizer_email: string | null;
   featured: boolean;
+  featured_until: string | null;   // date ISO
+  is_sponsored: boolean;
   is_outside_bergen: boolean;
   source: "admin" | "submission" | "ticketmaster" | "predicthq" | "ical";
   external_id: string | null;    // external API event ID for deduplication

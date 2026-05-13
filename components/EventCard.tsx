@@ -49,12 +49,16 @@ export function EventCard({ event, priority = false }: Props) {
           </span>
         )}
 
-        {/* Featured badge */}
-        {event.featured && (
+        {/* Sponsored badge — takes priority over Featured */}
+        {event.is_sponsored ? (
+          <span className="absolute right-3 top-3 rounded-full bg-accent-orange/90 px-2.5 py-0.5 text-xs font-semibold text-white">
+            Sponsored
+          </span>
+        ) : event.featured ? (
           <span className="absolute right-3 top-3 rounded-full bg-navy-800 px-2.5 py-0.5 text-xs font-semibold text-sky-light">
             ⭐ Featured
           </span>
-        )}
+        ) : null}
 
         {/* Outside Bergen badge */}
         {event.is_outside_bergen && (

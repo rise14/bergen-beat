@@ -215,7 +215,7 @@ export async function saveImportedEvents(
 
   for (const event of events) {
     try {
-      // 1. Deduplication check
+      // 1a. Deduplication check — same external source + ID
       const { data: logEntry } = await supabase
         .from("import_log")
         .select("id")
@@ -226,6 +226,39 @@ export async function saveImportedEvents(
       if (logEntry) {
         result.skipped++;
         continue;
+      }
+
+      // 1b. Cross-source duplicate check — same title prefix + same day
+      //     Catches the same event appearing in both Ticketmaster and PredictHQ.
+      const titlePrefix = event.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, "")
+        .trim()
+        .slice(0, 30);
+
+      if (titlePrefix.length >= 6) {
+        const startDay = event.start_date.slice(0, 10); // YYYY-MM-DD
+        const { data: existingDupe } = await supabase
+          .from("events")
+          .select("id")
+          .ilike("title", `${titlePrefix}%`)
+          .gte("start_date", `${startDay}T00:00:00.000Z`)
+          .lte("start_date", `${startDay}T23:59:59.999Z`)
+          .limit(1)
+          .maybeSingle();
+
+        if (existingDupe) {
+          result.skipped++;
+          // Log to import_log so this external ID is also skipped on future runs
+          await supabase.from("import_log").insert({
+            source: event.source,
+            external_id: event.external_id,
+            event_id: existingDupe.id,
+            status: "skipped",
+            raw_data: { reason: "cross-source-duplicate" },
+          });
+          continue;
+        }
       }
 
       // 2. Resolve venue

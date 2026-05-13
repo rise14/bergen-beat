@@ -116,6 +116,8 @@ export async function createEvent(formData: FormData) {
       organizer_email:   formData.get("organizer_email") as string || null,
       banner_url:          formData.get("banner_url") as string || null,
       featured:            formData.get("featured") === "on",
+      featured_until:      formData.get("featured_until") as string || null,
+      is_sponsored:        formData.get("is_sponsored") === "on",
       is_outside_bergen:   formData.get("is_outside_bergen") === "on",
       source:              "admin",
       published_at:      status === "published" ? new Date().toISOString() : null,
@@ -173,6 +175,8 @@ export async function updateEvent(id: string, formData: FormData) {
       organizer_email:   formData.get("organizer_email") as string || null,
       banner_url:          formData.get("banner_url") as string || null,
       featured:            formData.get("featured") === "on",
+      featured_until:      formData.get("featured_until") as string || null,
+      is_sponsored:        formData.get("is_sponsored") === "on",
       is_outside_bergen:   formData.get("is_outside_bergen") === "on",
       published_at:        status === "published" ? new Date().toISOString() : null,
       updated_at:          new Date().toISOString(),
@@ -336,6 +340,89 @@ export async function approveSubmission(formData: FormData) {
   revalidatePath("/admin/submissions");
 
   redirect("/admin/submissions?approved=1");
+}
+
+// ─── Bulk approve submissions ─────────────────────────────────────────────────
+// Approves multiple pending submissions at once.
+// Sends approval emails but skips event alerts + webhooks (to avoid flooding).
+
+export async function bulkApproveSubmissions(ids: string[]): Promise<{ approved: number }> {
+  if (!ids.length) return { approved: 0 };
+
+  const supabase = createAdminSupabaseClient();
+  let approved = 0;
+
+  for (const submissionId of ids) {
+    try {
+      const { data: sub } = await supabase
+        .from("event_submissions")
+        .select("*")
+        .eq("id", submissionId)
+        .eq("status", "pending")   // only process pending ones
+        .single();
+
+      if (!sub) continue;
+
+      const slug = buildSlug(sub.title, sub.start_date);
+
+      let venueId: string | null = null;
+      if (sub.venue_name) {
+        venueId = await resolveVenueId(supabase, sub.venue_name, sub.venue_address ?? "", "", null);
+      }
+
+      const { error: insertError } = await supabase.from("events").insert({
+        title:          sub.title,
+        slug,
+        description:    sub.description,
+        status:         "published",
+        is_free:        sub.is_free,
+        price_range:    sub.price_range,
+        external_url:   sub.external_url,
+        category_id:    sub.category_id,
+        venue_id:       venueId,
+        start_date:     sub.start_date,
+        end_date:       sub.end_date,
+        organizer_name: sub.organizer_name,
+        organizer_email:sub.organizer_email,
+        banner_url:     sub.banner_url,
+        source:         "submission",
+        submission_id:  sub.id,
+        published_at:   new Date().toISOString(),
+      });
+
+      if (insertError) {
+        console.error(`[bulkApprove] Failed to insert event for submission ${submissionId}:`, insertError.message);
+        continue;
+      }
+
+      const { data: updatedSub } = await supabase
+        .from("event_submissions")
+        .update({ status: "approved", reviewed_at: new Date().toISOString() })
+        .eq("id", submissionId)
+        .select("edit_token")
+        .single();
+
+      await sendSubmissionApproved({
+        to:            sub.organizer_email,
+        organizerName: sub.organizer_name,
+        eventTitle:    sub.title,
+        eventSlug:     slug,
+        editToken:     updatedSub?.edit_token ?? null,
+      }).catch((err) =>
+        console.error(`[bulkApprove] Email to ${sub.organizer_email} failed:`, err)
+      );
+
+      approved++;
+    } catch (err) {
+      console.error(`[bulkApprove] Error processing submission ${submissionId}:`, err);
+    }
+  }
+
+  revalidatePath("/");
+  revalidatePath("/events");
+  revalidatePath("/admin/submissions");
+
+  return { approved };
 }
 
 // ─── Reject submission ────────────────────────────────────────────────────────

@@ -347,6 +347,14 @@ export function EventForm({
               </label>
             </div>
             <div className="flex items-center gap-2">
+              <input type="checkbox" id="is_sponsored" name="is_sponsored"
+                defaultChecked={initialValues.is_sponsored}
+                className="accent-navy-800" />
+              <label htmlFor="is_sponsored" className="text-sm text-gray-700">
+                💰 Sponsored listing
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
               <input type="checkbox" id="is_outside_bergen" name="is_outside_bergen"
                 defaultChecked={initialValues.is_outside_bergen}
                 className="accent-navy-800" />
@@ -355,6 +363,12 @@ export function EventForm({
               </label>
             </div>
           </div>
+          <Field label="Featured until (optional)" htmlFor="featured_until"
+            hint="Event auto-loses featured status after this date (handled by nightly cron).">
+            <input id="featured_until" name="featured_until" type="date"
+              defaultValue={initialValues.featured_until?.slice(0, 10) ?? ""}
+              className={inputClass} />
+          </Field>
         </div>
       </section>
 

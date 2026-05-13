@@ -1,6 +1,7 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { SubmissionCard } from "@/components/admin/SubmissionCard";
 import type { SubmissionRow } from "@/components/admin/SubmissionCard";
+import { PendingSubmissionsPanel } from "@/components/admin/PendingSubmissionsPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -87,21 +88,11 @@ export default async function AdminSubmissionsPage({
       )}
 
       {pending.length > 0 ? (
-        <section className="mb-12">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
-            Needs review
-          </h2>
-          <div className="space-y-4">
-            {pending.map((sub) => (
-              <SubmissionCard
-                key={sub.id}
-                submission={sub as SubmissionRow}
-                categories={cats}
-                highlightId={searchParams.edited}
-              />
-            ))}
-          </div>
-        </section>
+        <PendingSubmissionsPanel
+          pending={pending as SubmissionRow[]}
+          categories={cats}
+          highlightId={searchParams.edited}
+        />
       ) : (
         <div className="mb-12 rounded-xl border border-gray-100 py-10 text-center text-gray-400">
           No submissions pending review. 🎉

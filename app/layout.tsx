@@ -80,8 +80,9 @@ export default function RootLayout({
             </div>
             <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
               <a href="/events"          className="text-sky hover:text-white transition-colors">Events</a>
-              <a href="/events/today"   className="text-sky hover:text-white transition-colors">Today</a>
-              <a href="/this-weekend"   className="text-sky hover:text-white transition-colors">This Weekend</a>
+              <a href="/events/today"     className="text-sky hover:text-white transition-colors">Today</a>
+              <a href="/events/this-week" className="text-sky hover:text-white transition-colors">This Week</a>
+              <a href="/this-weekend"     className="text-sky hover:text-white transition-colors">This Weekend</a>
               <a href="/events/free"    className="text-sky hover:text-white transition-colors">Free Events</a>
               <a href="/events/kids"    className="text-sky hover:text-white transition-colors">Kids &amp; Family</a>
               <a href="/events/outdoor" className="text-sky hover:text-white transition-colors">Outdoor</a>
