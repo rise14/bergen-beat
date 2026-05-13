@@ -45,6 +45,31 @@ export async function getFeaturedEvents(): Promise<Event[]> {
   return asEvents(data);
 }
 
+export async function getTrendingEvents({ limit = 8 }: { limit?: number } = {}): Promise<Event[]> {
+  const supabase = createAdminSupabaseClient();
+
+  // Call the RPC function that ranks event_ids by 7-day view count
+  const { data: trendingIds } = await supabase.rpc("get_trending_event_ids", { p_limit: limit });
+
+  if (!trendingIds || trendingIds.length === 0) return [];
+
+  const ids = (trendingIds as { event_id: string }[]).map((r) => r.event_id);
+
+  const { data } = await supabase
+    .from("events")
+    .select(EVENT_CARD_SELECT)
+    .eq("status", "published")
+    .gte("start_date", new Date().toISOString())
+    .in("id", ids);
+
+  // Re-sort to match the ranking order returned by the RPC
+  const sorted = ids
+    .map((id) => (data ?? []).find((e: Record<string, unknown>) => e.id === id))
+    .filter(Boolean);
+
+  return asEvents(sorted);
+}
+
 export async function getUpcomingEvents({
   limit = 8,
 }: { limit?: number } = {}): Promise<Event[]> {

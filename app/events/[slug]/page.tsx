@@ -8,6 +8,7 @@ import { EventMap } from "@/components/EventMap";
 import { AddToCalendar } from "@/components/AddToCalendar";
 import { ShareButtons } from "@/components/ShareButtons";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
+import { TrackView } from "@/components/TrackView";
 import { formatEventDate, formatEventTime } from "@/lib/dates";
 import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
 import type { Event } from "@/types";
@@ -92,6 +93,9 @@ export default async function EventPage({ params, searchParams }: Props) {
 
   return (
     <>
+      {/* View tracking — fire-and-forget, invisible */}
+      <TrackView eventId={event.id} />
+
       {/* Structured data for Google */}
       <script
         type="application/ld+json"

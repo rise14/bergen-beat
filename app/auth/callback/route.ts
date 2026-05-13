@@ -3,11 +3,12 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 // Supabase redirects here after the user clicks a magic link.
-// This route exchanges the one-time token for a session cookie,
-// then sends the user on to /admin.
+// Exchanges the one-time code for a session, then forwards to `next`.
+// Works for both admin (/admin) and organizer (/organizer) flows.
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const next = searchParams.get("next") ?? "/admin";
 
   if (code) {
     const cookieStore = cookies();
@@ -31,10 +32,13 @@ export async function GET(request: Request) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}/admin`);
+      return NextResponse.redirect(`${origin}${next}`);
     }
   }
 
-  // Something went wrong — send back to login with an error message
-  return NextResponse.redirect(`${origin}/admin/login?error=auth_failed`);
+  // Something went wrong — send back to the appropriate login page
+  const errorDest = next.startsWith("/organizer")
+    ? "/organizer/login?error=1"
+    : "/admin/login?error=auth_failed";
+  return NextResponse.redirect(`${origin}${errorDest}`);
 }

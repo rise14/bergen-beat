@@ -1,5 +1,6 @@
 // Email sending via Resend (https://resend.com)
 // Install: npm install resend
+// Install: npm install stripe  (needed for lib/stripe.ts)
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@bergenbeat.net";
 const FROM_ADDRESS = "Bergen Beat <noreply@bergenbeat.net>";
@@ -740,4 +741,72 @@ export async function sendEventAlert({
   });
 
   await resend.emails.send({ from: FROM_ADDRESS, to, subject, html });
+}
+
+// ─── Sponsorship confirmation ──────────────────────────────────────────────────
+
+export async function sendSponsorshipConfirmation({
+  to,
+  eventSlug,
+  featuredUntil,
+}: {
+  to: string;
+  eventSlug: string;
+  featuredUntil: string;
+}) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+  const eventUrl = `${siteUrl}/events/${eventSlug}`;
+  const resend = getResend();
+
+  await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: "Your Bergen Beat sponsorship is live! 🎉",
+    html: `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:32px 16px;">
+        <h1 style="font-size:22px;font-weight:800;color:#111827;margin:0 0 8px;">
+          🎉 Your event is now sponsored!
+        </h1>
+        <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 24px;">
+          Your listing is live across Bergen Beat through <strong>${featuredUntil}</strong>.
+          Here's what's now active:
+        </p>
+
+        <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+          <tr>
+            <td style="padding:10px;background:#fef3c7;border-radius:8px 0 0 0;text-align:center;font-size:20px;">🏠</td>
+            <td style="padding:10px;background:#fef3c7;border-radius:0 8px 0 0;">
+              <strong style="color:#111827;">Homepage carousel</strong><br>
+              <span style="font-size:13px;color:#6b7280;">Featured in the rotating hero</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:10px;background:#fff7ed;text-align:center;font-size:20px;">📧</td>
+            <td style="padding:10px;background:#fff7ed;">
+              <strong style="color:#111827;">Weekly digest</strong><br>
+              <span style="font-size:13px;color:#6b7280;">Priority sponsored slot in the next newsletter</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:10px;background:#fef3c7;border-radius:0 0 0 8px;text-align:center;font-size:20px;">🏷️</td>
+            <td style="padding:10px;background:#fef3c7;border-radius:0 0 8px 0;">
+              <strong style="color:#111827;">Sponsored badge</strong><br>
+              <span style="font-size:13px;color:#6b7280;">Orange badge on every event card</span>
+            </td>
+          </tr>
+        </table>
+
+        <a href="${eventUrl}"
+          style="display:inline-block;background:#1e3a5f;color:#fff;font-size:15px;font-weight:600;
+                 padding:12px 28px;border-radius:8px;text-decoration:none;margin-bottom:24px;">
+          View your listing →
+        </a>
+
+        <p style="font-size:13px;color:#6b7280;margin:0;">
+          Questions? Reply to this email or reach us at
+          <a href="mailto:hi@bergenbeat.net" style="color:#e05a2b;">hi@bergenbeat.net</a>.
+        </p>
+      </div>
+    `,
+  });
 }

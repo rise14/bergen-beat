@@ -43,6 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/events/kids`,   changeFrequency: "daily",   priority: 0.8, lastModified: today },
     { url: `${siteUrl}/events/outdoor`,changeFrequency: "daily",   priority: 0.8, lastModified: today },
     { url: `${siteUrl}/submit`,        changeFrequency: "monthly", priority: 0.4, lastModified: today },
+    { url: `${siteUrl}/sponsor`,       changeFrequency: "monthly", priority: 0.5, lastModified: today },
   ];
 
   const eventUrls: MetadataRoute.Sitemap =

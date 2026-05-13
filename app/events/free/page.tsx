@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/EventGrid";
 import { Pagination } from "@/components/Pagination";
+import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
 import { buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import type { Event } from "@/types";
 
@@ -42,7 +43,7 @@ export default async function FreeEventsPage({ searchParams }: Props) {
     .from("events")
     .select(`
       id, title, slug, short_description, start_date, end_date,
-      is_free, price_range, banner_url, featured, is_recurring, recurrence_note,
+      is_free, price_range, banner_url, featured, is_recurring, recurrence_note, is_sponsored,
       category:categories(id, name, slug, icon, color),
       neighborhood:neighborhoods(id, name, slug),
       venue:venues(id, slug, name, city, lat, lng)
@@ -144,6 +145,7 @@ export default async function FreeEventsPage({ searchParams }: Props) {
       {/* Footer nudges */}
       {events.length > 0 && (
         <div className="mt-12 space-y-4">
+          <NewsletterSubscribeBar variant="inline" />
           <div className="rounded-2xl border border-cream-200 bg-white p-6 text-center">
             <p className="text-sm font-medium text-navy-800">Running a free event?</p>
             <p className="mt-1 text-sm text-walnut">

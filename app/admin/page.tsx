@@ -1,5 +1,6 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { DashboardCharts } from "@/components/admin/DashboardCharts";
+import { ImportTriggerButton } from "@/components/admin/ImportTriggerButton";
 import type { DailyCount, CategoryCount, StatusCounts } from "@/components/admin/DashboardCharts";
 
 export const revalidate = 0;
@@ -119,6 +120,7 @@ export default async function AdminDashboardPage() {
             className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
             Review submissions
           </a>
+          <ImportTriggerButton />
         </div>
       </div>
 
