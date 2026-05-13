@@ -7,7 +7,7 @@ export const PAGE_SIZE = 24;
 // Fields to select for event cards (list views)
 const EVENT_CARD_SELECT = `
   id, title, slug, short_description, start_date, end_date,
-  is_free, price_range, banner_url, featured, is_recurring, recurrence_note,
+  is_free, price_range, banner_url, featured, is_recurring, recurrence_note, is_sponsored,
   category:categories(id, name, slug, icon, color),
   neighborhood:neighborhoods(id, name, slug),
   venue:venues(id, slug, name, city, lat, lng)

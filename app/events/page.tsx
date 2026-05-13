@@ -139,7 +139,6 @@ export default async function EventsPage({ searchParams }: Props) {
           <NewsletterSubscribeBar variant="inline" />
         </div>
       )}
-      </div>
     </>
   );
 }
