@@ -85,6 +85,10 @@ module.exports = withSentryConfig(nextConfig, {
   // Hide Sentry route annotation in the Next.js page tree
   hideSourceMaps: true,
 
-  // Automatically tree-shake Sentry logger statements
-  disableLogger: true,
+  // Tree-shake Sentry debug logging out of production bundles
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
 });
