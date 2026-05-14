@@ -24,6 +24,7 @@ interface IcalSource {
   id: string;
   name: string;
   url: string;
+  source_type: "ical" | "rss";
   category_guess: string | null;
   enabled: boolean;
   last_fetched_at: string | null;
@@ -150,7 +151,7 @@ export default function ImportPage() {
   const [icalSources, setIcalSources] = useState<IcalSource[]>([]);
   const [icalLoading, setIcalLoading] = useState(true);
   const [addingSource, setAddingSource] = useState(false);
-  const [addForm, setAddForm] = useState({ name: "", url: "", category_guess: "" });
+  const [addForm, setAddForm] = useState({ name: "", url: "", category_guess: "", source_type: "ical" });
   const [addError, setAddError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -261,11 +262,12 @@ export default function ImportPage() {
       fd.set("name", addForm.name);
       fd.set("url", addForm.url);
       fd.set("category_guess", addForm.category_guess);
+      fd.set("source_type", addForm.source_type);
       const result = await addIcalSource(fd);
       if (!result.ok) {
         setAddError(result.error ?? "Failed to add source");
       } else {
-        setAddForm({ name: "", url: "", category_guess: "" });
+        setAddForm({ name: "", url: "", category_guess: "", source_type: "ical" });
         await loadIcalSources();
       }
     } finally {
@@ -388,13 +390,13 @@ export default function ImportPage() {
         </div>
       </section>
 
-      {/* ── iCal / .ics Feed Sources ─────────────────────────────────────────── */}
+      {/* ── Calendar & RSS Feed Sources ──────────────────────────────────────── */}
       <section>
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-800">iCal / .ics Feeds</h2>
+            <h2 className="text-lg font-semibold text-gray-800">Calendar &amp; RSS Feeds</h2>
             <p className="mt-0.5 text-sm text-gray-500">
-              Free public calendar feeds from libraries, government, venues, and community orgs.
+              Free public feeds from libraries, government, venues, Patch.com, and community orgs.
             </p>
           </div>
           <button
@@ -428,6 +430,7 @@ export default function ImportPage() {
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
                   <th className="px-4 py-3">Name / URL</th>
+                  <th className="px-4 py-3">Type</th>
                   <th className="px-4 py-3">Category</th>
                   <th className="px-4 py-3">Last fetched</th>
                   <th className="px-4 py-3 text-center">Enabled</th>
@@ -449,6 +452,15 @@ export default function ImportPage() {
                           <p className="mt-0.5 max-w-xs truncate text-xs text-gray-400" title={src.url}>
                             {src.url}
                           </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                            src.source_type === "rss"
+                              ? "bg-orange-50 text-orange-700"
+                              : "bg-blue-50 text-blue-700"
+                          }`}>
+                            {src.source_type === "rss" ? "RSS" : "iCal"}
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-gray-600">
                           {src.category_guess ?? <span className="text-gray-300">—</span>}
@@ -500,7 +512,7 @@ export default function ImportPage() {
                       </tr>
                       {srcResult && (
                         <tr key={`${src.id}-result`}>
-                          <td colSpan={5} className="px-4 pb-3">
+                          <td colSpan={6} className="px-4 pb-3">
                             <ResultPanel result={srcResult} />
                           </td>
                         </tr>
@@ -515,21 +527,59 @@ export default function ImportPage() {
 
         {/* Add source form */}
         <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-base font-semibold text-gray-900">Add iCal Feed</h3>
+          <h3 className="mb-4 text-base font-semibold text-gray-900">Add Feed</h3>
           <form onSubmit={handleAddSource} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="sm:col-span-1">
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Feed type <span className="text-red-400">*</span>
+                </label>
+                <select
+                  value={addForm.source_type}
+                  onChange={(e) => setAddForm((f) => ({ ...f, source_type: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
+                >
+                  <option value="ical">iCal (.ics)</option>
+                  <option value="rss">RSS / Atom</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
                 <label className="mb-1 block text-xs font-medium text-gray-600">
                   Source name <span className="text-red-400">*</span>
                 </label>
                 <input
                   required
                   type="text"
-                  placeholder="Hackensack Library"
+                  placeholder={addForm.source_type === "rss" ? "Patch – Hackensack Events" : "Hackensack Library"}
                   value={addForm.name}
                   onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
                 />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  {addForm.source_type === "rss" ? "RSS / Atom feed URL" : ".ics feed URL"}{" "}
+                  <span className="text-red-400">*</span>
+                </label>
+                <input
+                  required
+                  type="url"
+                  placeholder={
+                    addForm.source_type === "rss"
+                      ? "https://patch.com/new-jersey/hackensack/local-events/rss"
+                      : "https://example.com/events/calendar.ics"
+                  }
+                  value={addForm.url}
+                  onChange={(e) => setAddForm((f) => ({ ...f, url: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  {addForm.source_type === "rss"
+                    ? "Must be a publicly accessible RSS 2.0 or Atom feed URL."
+                    : "Must be a publicly accessible .ics URL (no login required)."}
+                </p>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
@@ -546,22 +596,6 @@ export default function ImportPage() {
                   ))}
                 </select>
               </div>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                .ics feed URL <span className="text-red-400">*</span>
-              </label>
-              <input
-                required
-                type="url"
-                placeholder="https://example.com/events/calendar.ics"
-                value={addForm.url}
-                onChange={(e) => setAddForm((f) => ({ ...f, url: e.target.value }))}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
-              />
-              <p className="mt-1 text-xs text-gray-400">
-                Must be a publicly accessible .ics URL (no login required).
-              </p>
             </div>
 
             {addError && (
@@ -582,17 +616,29 @@ export default function ImportPage() {
           </form>
         </div>
 
-        {/* iCal tips */}
+        {/* Feed tips */}
         <div className="mt-4 rounded-xl border border-gray-200 bg-cream-50 p-5">
-          <h3 className="mb-2 text-sm font-semibold text-navy-800">Where to find .ics feeds</h3>
-          <ul className="space-y-1 text-sm text-walnut">
-            <li>🏛 <strong>Bergen County libraries</strong> — check their events/calendar page for an "Add to calendar" or iCal export link</li>
-            <li>🏛 <strong>Municipal websites</strong> — many NJ towns publish government event calendars as .ics feeds</li>
-            <li>🎭 <strong>Venues & arts orgs</strong> — theaters, arts councils, and performing arts centers often expose calendar feeds</li>
-            <li>🌐 <strong>Google Calendar</strong> — any public Google Calendar has an ICAL link in its settings</li>
-          </ul>
+          <h3 className="mb-2 text-sm font-semibold text-navy-800">Where to find feeds</h3>
+          <div className="grid gap-4 sm:grid-cols-2 text-sm text-walnut">
+            <div>
+              <p className="font-semibold text-navy-800 mb-1">RSS / Atom</p>
+              <ul className="space-y-1">
+                <li>📰 <strong>Patch.com</strong> — <code className="text-xs bg-white/60 rounded px-1">patch.com/new-jersey/&lt;town&gt;/local-events/rss</code> — covers every Bergen town</li>
+                <li>🏛 <strong>Municipal sites</strong> — many NJ town sites expose an RSS feed for news &amp; events</li>
+                <li>🎭 <strong>Venue blogs</strong> — venues that publish event announcements via WordPress or Squarespace have built-in RSS</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold text-navy-800 mb-1">iCal (.ics)</p>
+              <ul className="space-y-1">
+                <li>📚 <strong>Bergen County libraries</strong> — check their calendar page for an "Add to calendar" or iCal export link</li>
+                <li>🏛 <strong>Government calendars</strong> — many NJ towns publish .ics feeds from their parks/rec departments</li>
+                <li>🌐 <strong>Google Calendar</strong> — any public Google Calendar has an ICAL link in its settings</li>
+              </ul>
+            </div>
+          </div>
           <p className="mt-3 text-xs text-gray-400">
-            Note: Recurring events (RRULE) are currently skipped to avoid calendar spam.
+            Note: iCal recurring events (RRULE) are skipped. RSS items are filtered for event-like content (keyword &amp; category matching).
           </p>
         </div>
       </section>

@@ -61,7 +61,7 @@ export interface Event {
   featured_until: string | null;   // date ISO
   is_sponsored: boolean;
   is_outside_bergen: boolean;
-  source: "admin" | "submission" | "ticketmaster" | "predicthq" | "ical";
+  source: "admin" | "submission" | "ticketmaster" | "predicthq" | "ical" | "rss";
   external_id: string | null;    // external API event ID for deduplication
   submission_id: UUID | null;
   published_at: string | null;
@@ -107,7 +107,7 @@ export interface NewsletterSubscriber {
 
 // ─── Import log — tracks events pulled from external APIs ────────────────────
 
-export type ImportSource = "ticketmaster" | "predicthq" | "ical";
+export type ImportSource = "ticketmaster" | "predicthq" | "ical" | "rss";
 
 export interface ImportLog {
   id: UUID;

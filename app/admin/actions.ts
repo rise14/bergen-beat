@@ -855,13 +855,14 @@ export async function addIcalSource(formData: FormData): Promise<{ ok: boolean; 
   const name           = (formData.get("name")           as string)?.trim();
   const url            = (formData.get("url")            as string)?.trim();
   const category_guess = (formData.get("category_guess") as string)?.trim() || null;
+  const source_type    = (formData.get("source_type")    as string)?.trim() === "rss" ? "rss" : "ical";
 
   if (!name) return { ok: false, error: "Name is required." };
   if (!url)  return { ok: false, error: "URL is required." };
 
   const { error } = await supabase
     .from("ical_sources")
-    .insert({ name, url, category_guess });
+    .insert({ name, url, category_guess, source_type });
 
   if (error) return { ok: false, error: error.message };
   revalidatePath("/admin/import");

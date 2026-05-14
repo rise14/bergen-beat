@@ -15,11 +15,14 @@
 
 import type { ImportedEvent } from "@/types";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { fetchRssSource } from "./rss";
 
 export interface IcalSource {
   id: string;
   name: string;
   url: string;
+  /** 'ical' (default) or 'rss' — stored as source_type column in ical_sources table */
+  source_type: "ical" | "rss";
   category_guess: string | null;
   enabled: boolean;
   last_fetched_at: string | null;
@@ -291,7 +294,10 @@ export async function fetchAllIcalSources(): Promise<IcalImportResult[]> {
 
   for (const source of sources) {
     try {
-      const events = await fetchIcalSource(source);
+      const events =
+        source.source_type === "rss"
+          ? await fetchRssSource(source)
+          : await fetchIcalSource(source);
       // Update last_fetched_at
       await supabase
         .from("ical_sources")

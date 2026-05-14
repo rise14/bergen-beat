@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchTicketmasterEvents } from "@/lib/importers/ticketmaster";
 import { fetchPredictHQEvents } from "@/lib/importers/predicthq";
 import { fetchAllIcalSources, fetchIcalSource } from "@/lib/importers/ical";
+import { fetchRssSource } from "@/lib/importers/rss";
 import { enrichWithImages } from "@/lib/importers/images";
 import { saveImportedEvents } from "@/lib/importers/save";
 import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
@@ -65,7 +66,11 @@ export async function POST(req: NextRequest) {
         }
 
         try {
-          const events = await fetchIcalSource(row as Parameters<typeof fetchIcalSource>[0]);
+          const typedRow = row as Parameters<typeof fetchIcalSource>[0];
+          const events =
+            row.source_type === "rss"
+              ? await fetchRssSource(typedRow)
+              : await fetchIcalSource(typedRow);
           allEvents = events;
           perSourceResults.push({ name: row.name, fetched: events.length, error: null });
 
