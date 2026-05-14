@@ -13,6 +13,19 @@ export default async function AdminDashboardPage() {
   const sevenDaysAgo  = new Date(Date.now() - 7  * 24 * 60 * 60 * 1000).toISOString();
   const endOfWeek     = new Date(Date.now() + 7  * 24 * 60 * 60 * 1000).toISOString();
 
+  // Most-viewed events in last 7 days (uses get_trending_event_ids RPC)
+  const { data: trendingIds } = await supabase.rpc("get_trending_event_ids", { p_limit: 5 });
+  const trendingEventIds = ((trendingIds ?? []) as { event_id: string; view_count: number }[]);
+
+  let trendingEventDetails: { id: string; title: string; slug: string; start_date: string }[] = [];
+  if (trendingEventIds.length) {
+    const { data: tevents } = await supabase
+      .from("events")
+      .select("id, title, slug, start_date")
+      .in("id", trendingEventIds.map((r) => r.event_id));
+    trendingEventDetails = (tevents ?? []) as { id: string; title: string; slug: string; start_date: string }[];
+  }
+
   const [
     { count: totalEvents },
     { count: publishedEvents },
@@ -147,7 +160,7 @@ export default async function AdminDashboardPage() {
       {/* Charts row */}
       <DashboardCharts daily={daily} categories={categories} statuses={statuses} />
 
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
+      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
 
         {/* This week's events */}
         <div className="rounded-xl border border-gray-100 bg-white p-6">
@@ -177,6 +190,36 @@ export default async function AdminDashboardPage() {
             className="mt-4 inline-block text-xs font-medium text-accent-orange hover:underline">
             View public events page →
           </a>
+        </div>
+
+        {/* Most viewed (7 days) */}
+        <div className="rounded-xl border border-gray-100 bg-white p-6">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-gray-400">
+            Most viewed (7 days)
+          </h2>
+          {trendingEventDetails.length === 0 ? (
+            <p className="text-sm text-gray-400">No view data yet — views are tracked as pages load.</p>
+          ) : (
+            <ol className="divide-y divide-gray-50">
+              {trendingEventIds.map((row, i) => {
+                const ev = trendingEventDetails.find((e) => e.id === row.event_id);
+                if (!ev) return null;
+                return (
+                  <li key={ev.id} className="py-3 first:pt-0 last:pb-0 flex items-center gap-3">
+                    <span className="shrink-0 text-xs font-bold text-gray-300 w-4">{i + 1}</span>
+                    <div className="min-w-0 flex-1">
+                      <a href={`/events/${ev.slug}`} target="_blank" rel="noopener noreferrer"
+                        className="block truncate text-sm font-medium text-gray-800 hover:text-accent-orange">
+                        {ev.title}
+                      </a>
+                      <p className="mt-0.5 text-xs text-gray-400">{fmt(ev.start_date)}</p>
+                    </div>
+                    <span className="shrink-0 text-xs font-semibold text-navy-800">{row.view_count.toLocaleString()}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
         </div>
 
         {/* Recently added */}

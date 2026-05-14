@@ -21,7 +21,22 @@ export async function GET(request: Request) {
   }
 
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const today  = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const supabase = createAdminSupabaseClient();
+
+  // ── Expire sponsored listings whose featured_until date has passed ───────────
+  const { data: expiredSponsors } = await supabase
+    .from("events")
+    .update({ is_sponsored: false, featured: false })
+    .eq("is_sponsored", true)
+    .lt("featured_until", today)
+    .not("featured_until", "is", null)
+    .select("id, title");
+
+  if (expiredSponsors?.length) {
+    console.log(`[cron/expire] expired ${expiredSponsors.length} sponsorship(s):`,
+      expiredSponsors.map((e) => e.title).join(", "));
+  }
 
   // Archive published events where the effective end date is past the cutoff.
   // Supabase doesn't support "coalesce" in filters directly, so we run two queries:
@@ -62,5 +77,6 @@ export async function GET(request: Request) {
   return NextResponse.json({
     archived: archived.length,
     titles: archived.map((e) => e.title),
+    sponsorships_expired: expiredSponsors?.length ?? 0,
   });
 }

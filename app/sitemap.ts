@@ -44,6 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/events/outdoor`,changeFrequency: "daily",   priority: 0.8, lastModified: today },
     { url: `${siteUrl}/submit`,        changeFrequency: "monthly", priority: 0.4, lastModified: today },
     { url: `${siteUrl}/sponsor`,       changeFrequency: "monthly", priority: 0.5, lastModified: today },
+    { url: `${siteUrl}/towns`,         changeFrequency: "weekly",  priority: 0.7, lastModified: today },
   ];
 
   const eventUrls: MetadataRoute.Sitemap =
@@ -70,6 +71,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: today,
     }));
 
+  // Town pages — same slugs, different URL structure for SEO
+  const townUrls: MetadataRoute.Sitemap =
+    (neighborhoods ?? []).map((n) => ({
+      url: `${siteUrl}/towns/${n.slug}`,
+      changeFrequency: "daily" as const,
+      priority: 0.8,
+      lastModified: today,
+    }));
+
   const venueUrls: MetadataRoute.Sitemap =
     (venues ?? []).map((v) => ({
       url: `${siteUrl}/venues/${v.slug}`,
@@ -83,6 +93,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...eventUrls,
     ...categoryUrls,
     ...neighborhoodUrls,
+    ...townUrls,
     ...venueUrls,
   ];
 }

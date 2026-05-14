@@ -13,6 +13,7 @@ export default function AdminLayout({
     { href: "/admin/venues", label: "Venues" },
     { href: "/admin/neighborhoods", label: "Neighborhoods" },
     { href: "/admin/subscribers", label: "Subscribers" },
+    { href: "/admin/digest-preview", label: "Digest Preview" },
   ];
 
   return (

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { EventGrid } from "@/components/EventGrid";
 import { CategoryPill } from "@/components/CategoryPill";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
-import { getFeaturedEvents, getUpcomingEvents, getPublishedEvents } from "@/lib/events";
+import { getFeaturedEvents, getUpcomingEvents, getPublishedEvents, getTrendingEvents } from "@/lib/events";
 import { getCategories } from "@/lib/categories";
 import { buildWebSiteJsonLd } from "@/lib/seo";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
@@ -41,12 +41,13 @@ export default async function HomePage({ searchParams }: Props) {
   const activeDate = searchParams.date ?? null;
   const isFiltered = !!activeDate;
 
-  const [featuredEvents, browseEvents, categories] = await Promise.all([
+  const [featuredEvents, browseEvents, categories, trendingEvents] = await Promise.all([
     getFeaturedEvents(),
     isFiltered
       ? getPublishedEvents({ dateFilter: activeDate as EventFilters["dateFilter"], pageSize: 12 }).then((r) => r.events)
       : getUpcomingEvents({ limit: 8 }),
     getCategories(),
+    isFiltered ? Promise.resolve([]) : getTrendingEvents({ limit: 4 }),
   ]);
 
   const sectionLabel = isFiltered ? SECTION_LABELS[activeDate!] ?? "Events" : "Coming up";
@@ -157,6 +158,21 @@ export default async function HomePage({ searchParams }: Props) {
           </div>
         )}
       </section>
+
+      {/* ── Trending this week ───────────────────────────────── */}
+      {!isFiltered && trendingEvents.length > 0 && (
+        <section className="py-8">
+          <div className="mb-6 flex items-end justify-between">
+            <h2 className="heading-rule font-serif text-2xl font-semibold text-navy-800">
+              Trending this week
+            </h2>
+            <a href="/events" className="mb-3 text-sm font-medium text-accent-orange hover:underline">
+              See all →
+            </a>
+          </div>
+          <EventGrid events={trendingEvents} />
+        </section>
+      )}
 
       {/* ── Newsletter ───────────────────────────────────────── */}
       <section className="py-12">
