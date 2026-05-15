@@ -60,35 +60,48 @@ export default async function HomePage({ searchParams }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
       />
 
-      {/* ── Hero — navy card ─────────────────────────────────── */}
-      <section className="-mx-4 -mt-8 bg-navy-800 px-4 pb-10 pt-12 text-center sm:-mx-6 sm:px-6">
-        <h1 className="flex justify-center">
-          {/* Logo: 1230×498px intrinsic, displayed at max-w-xs (320px) */}
-          <Image
-            src="/bergen-beat-logo.png"
-            alt="Bergen Beat"
-            width={320}
-            height={130}
-            priority
-            className="h-auto w-full max-w-xs brightness-0 invert"
-          />
-        </h1>
-        <p className="mx-auto mt-4 max-w-md text-base text-sky">
-          What&apos;s happening in Bergen County, NJ — concerts, markets, festivals, food, and more.
-        </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <a
-            href="/events"
-            className="rounded-full bg-accent-orange px-7 py-3 text-sm font-semibold text-white hover:bg-walnut transition-colors"
-          >
-            Browse all events
-          </a>
-          <a
-            href="/submit"
-            className="rounded-full border border-sky/40 px-7 py-3 text-sm font-semibold text-sky hover:border-sky hover:text-white transition-colors"
-          >
-            Submit an event
-          </a>
+      {/* ── Hero — photo background ───────────────────────────── */}
+      <section
+        className="-mx-4 -mt-8 relative px-4 pb-10 pt-12 text-center sm:-mx-6 sm:px-6 overflow-hidden"
+        style={{
+          backgroundImage: "url('/bergen-county-splash.jpeg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center top",
+        }}
+      >
+        {/* Dark overlay so text stays legible */}
+        <div className="absolute inset-0 bg-navy-800/45" aria-hidden="true" />
+
+        {/* Content sits above the overlay */}
+        <div className="relative z-10">
+          <h1 className="flex justify-center">
+            {/* Logo: 1230×498px intrinsic, displayed at max-w-xs (320px) */}
+            <Image
+              src="/bergen-beat-logo.png"
+              alt="Bergen Beat"
+              width={320}
+              height={130}
+              priority
+              className="h-auto w-full max-w-xs brightness-0 invert"
+            />
+          </h1>
+          <p className="mx-auto mt-4 max-w-md text-base text-white">
+            What&apos;s happening in Bergen County, NJ — concerts, markets, festivals, food, and more.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="/events"
+              className="rounded-full bg-accent-orange px-7 py-3 text-sm font-semibold text-white hover:bg-walnut transition-colors"
+            >
+              Browse all events
+            </a>
+            <a
+              href="/submit"
+              className="rounded-full border border-white/60 px-7 py-3 text-sm font-semibold text-white hover:border-white hover:text-white transition-colors"
+            >
+              Submit an event
+            </a>
+          </div>
         </div>
       </section>
 
