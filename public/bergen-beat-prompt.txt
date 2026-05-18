@@ -1,0 +1,639 @@
+
+# EVENT PLATFORM MASTER BUILD DOCUMENT
+
+## Goal
+
+Build a production-ready SaaS event platform similar to Happen.events
+
+Core capabilities:
+
+* Multi-tenant architecture
+* Event websites
+* Organizer dashboards
+* Ticket sales
+* QR ticketing
+* Mobile check-in
+* Session scheduling
+* Speaker management
+* Sponsor management
+* Analytics
+* Custom domains
+* Subscription billing
+
+Technology stack:
+
+* Next.js
+* React
+* TypeScript
+* Tailwind CSS
+* Turborepo
+* Supabase
+* PostgreSQL
+* Stripe
+
+---
+
+# SYSTEM ARCHITECTURE
+
+Browser / Mobile PWA
+        │
+        ▼
+Frontend (Next.js)
+        │
+        ▼
+API Layer
+        │
+ ┌──────┼──────────────┬───────────────┬──────────────┐
+ ▼      ▼              ▼               ▼              ▼
+Auth   Database      Storage        Payments       Messaging
+       PostgreSQL    Object Store    Stripe         Email/SMS
+
+Applications:
+
+* web → public event sites
+* admin → organizer dashboard
+* checkin → QR scanning app
+
+Shared packages:
+
+* ui
+* db
+* auth
+* types
+* config
+
+---
+
+# MONOREPO FOLDER STRUCTURE
+
+bergen-beat/
+│
+├── apps/
+│   ├── web/
+│   ├── admin/
+│   └── checkin/
+│
+├── packages/
+│   ├── ui/
+│   ├── db/
+│   ├── auth/
+│   ├── types/
+│   └── config/
+│
+├── package.json
+├── turbo.json
+└── pnpm-workspace.yaml
+
+---
+
+# LOCAL DEVELOPMENT SETUP
+
+Install dependencies on macOS:
+
+brew install node pnpm
+
+Create monorepo:
+
+pnpm create turbo@latest event-platform
+cd event-platform
+
+Choose:
+
+* TypeScript
+* pnpm
+* Next.js App Router
+
+Install shared dependencies:
+
+pnpm add -w zod dotenv
+pnpm add -w @supabase/supabase-js
+pnpm add -w @supabase/ssr
+pnpm add -w stripe
+pnpm add -w clsx tailwind-merge lucide-react
+
+---
+
+# ENVIRONMENT VARIABLES
+
+Create `.env.local`
+
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+STRIPE_SECRET_KEY=
+NEXT_PUBLIC_STRIPE_PUBLIC_KEY=
+
+---
+
+# DATABASE DESIGN
+
+## users
+
+users
+-----
+id uuid primary key
+email text unique
+name text
+avatar_url text
+phone text
+created_at timestamp
+
+## organizations
+
+organizations
+-------------
+id uuid primary key
+name text
+slug text
+logo_url text
+custom_domain text
+plan text
+created_at timestamp
+
+## organization_members
+
+organization_members
+--------------------
+id uuid primary key
+organization_id uuid
+user_id uuid
+role text
+
+Roles:
+
+* owner
+* admin
+* event_manager
+* checkin_staff
+* finance
+
+---
+
+## venues
+
+venues
+------
+id uuid primary key
+name text
+address text
+city text
+state text
+country text
+lat decimal
+lng decimal
+
+---
+
+## events
+
+events
+------
+id uuid primary key
+organization_id uuid
+title text
+slug text unique
+description text
+status text
+timezone text
+start_date timestamp
+end_date timestamp
+venue_id uuid
+banner_url text
+published_at timestamp
+
+Status:
+
+* draft
+* private
+* published
+* archived
+
+---
+
+## sessions
+
+sessions
+--------
+id uuid primary key
+event_id uuid
+title text
+description text
+room text
+start_time timestamp
+end_time timestamp
+capacity integer
+
+---
+
+## speakers
+
+speakers
+--------
+id uuid primary key
+name text
+bio text
+photo_url text
+linkedin_url text
+
+---
+
+## session_speakers
+
+session_speakers
+----------------
+session_id uuid
+speaker_id uuid
+
+---
+
+## ticket_types
+
+ticket_types
+------------
+id uuid primary key
+event_id uuid
+name text
+price decimal
+currency text
+quantity integer
+sales_start timestamp
+sales_end timestamp
+
+Examples:
+
+* General Admission
+* VIP
+* Early Bird
+
+---
+
+## orders
+
+orders
+------
+id uuid primary key
+user_id uuid
+event_id uuid
+stripe_payment_id text
+status text
+subtotal decimal
+tax decimal
+total decimal
+
+---
+
+## attendees
+
+attendees
+---------
+id uuid primary key
+event_id uuid
+user_id uuid
+order_id uuid
+qr_code text
+checkin_time timestamp
+badge_printed boolean
+
+---
+
+## sponsors
+
+sponsors
+--------
+id uuid primary key
+event_id uuid
+name text
+tier text
+logo_url text
+website text
+
+---
+
+## notifications
+
+notifications
+-------------
+id uuid primary key
+user_id uuid
+type text
+channel text
+payload jsonb
+sent_at timestamp
+
+---
+
+## connections
+
+connections
+-----------
+id uuid primary key
+user_a uuid
+user_b uuid
+status text
+
+---
+
+# SHARED TYPES
+
+File:
+
+`packages/types/src/index.ts`
+
+export type UUID = string;
+
+export interface Event {
+  id: UUID;
+  title: string;
+  slug: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+}
+
+---
+
+# DATABASE CLIENT
+
+File:
+
+`packages/db/src/client.ts`
+
+import { createClient } from "@supabase/supabase-js";
+
+export const db = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+---
+
+# AUTH PACKAGE
+
+File:
+
+`packages/auth/src/index.ts`
+
+import { createClient } from "@supabase/supabase-js";
+
+export function createAuthClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+
+---
+
+# UI PACKAGE
+
+File:
+
+`packages/ui/src/button.tsx`
+
+import { ButtonHTMLAttributes } from "react";
+
+export function Button(
+  props: ButtonHTMLAttributes<HTMLButtonElement>
+) {
+  return (
+    <button
+      className="px-4 py-2 rounded bg-black text-white"
+      {...props}
+    />
+  );
+}
+
+---
+
+# WEB APP
+
+File:
+
+`apps/web/app/page.tsx`
+
+export default function HomePage() {
+  return (
+    <main>
+      <h1>Discover Events</h1>
+    </main>
+  );
+}
+
+Dynamic event pages:
+
+File:
+
+`apps/web/app/events/[slug]/page.tsx`
+
+interface Props {
+  params: {
+    slug: string;
+  };
+}
+
+export default async function EventPage(
+  { params }: Props
+) {
+  return (
+    <main>
+      <h1>{params.slug}</h1>
+    </main>
+  );
+}
+
+---
+
+# ADMIN APP
+
+File:
+
+`apps/admin/app/page.tsx`
+
+export default function Dashboard() {
+  return (
+    <main>
+      <h1>Organizer Dashboard</h1>
+    </main>
+  );
+}
+
+---
+
+# EVENT API
+
+File:
+
+`apps/admin/app/api/events/route.ts`
+
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  const body = await req.json();
+
+  return NextResponse.json({
+    success: true,
+    data: body
+  });
+}
+
+---
+
+# CHECK-IN APP
+
+File:
+
+`apps/checkin/app/page.tsx`
+
+export default function CheckinPage() {
+  return (
+    <main>
+      <h1>Scan Ticket</h1>
+    </main>
+  );
+}
+
+Use:
+
+* ZXing
+  or
+* html5-qrcode
+
+---
+
+# STRIPE CHECKOUT
+
+File:
+
+`apps/web/app/api/checkout/route.ts`
+
+import Stripe from "stripe";
+
+const stripe = new Stripe(
+  process.env.STRIPE_SECRET_KEY!
+);
+
+export async function POST() {
+  const session =
+    await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: [],
+      success_url: "http://localhost:3000",
+      cancel_url: "http://localhost:3000"
+    });
+
+  return Response.json(session);
+}
+
+---
+
+# UI WIREFRAMES
+
+## Public Event Page
+
+LOGO         Sign In
+
+Hero Image
+Event Name
+Date / Location
+Register Button
+
+About
+Speakers
+Schedule
+Sponsors
+
+## Organizer Dashboard
+
+Sidebar:
+Dashboard
+Events
+Attendees
+Tickets
+Sessions
+Speakers
+Sponsors
+Analytics
+Settings
+
+## Event Builder
+
+Step 1 Basic Info
+Step 2 Branding
+Step 3 Tickets
+Step 4 Schedule
+Step 5 Speakers
+Step 6 Publish
+
+## Mobile Check-in
+
+Scan QR
+Camera
+Attendee Found
+Checked In
+
+---
+
+# MVP ROADMAP
+
+Sprint 1:
+
+* Authentication
+* Organizations
+* Event creation
+* Event publishing
+
+Sprint 2:
+
+* Ticket sales
+* Checkout
+* Email confirmations
+
+Sprint 3:
+
+* QR tickets
+* Check-in app
+* Attendee dashboard
+
+Sprint 4:
+
+* Analytics
+* Custom domains
+* Subscription billing
+
+---
+
+# IMPLEMENTATION INSTRUCTIONS
+
+Build production-quality code.
+
+Requirements:
+
+* Type-safe APIs
+* Server actions where appropriate
+* Row-level security
+* Multi-tenant authorization
+* Responsive UI
+* Dark mode
+* Accessible components
+* Unit tests
+* Integration tests
+* CI/CD pipeline
+* Docker support
+* Database migrations
+* Seed scripts
+
+Start with:
+
+1. Monorepo setup
+2. Supabase schema
+3. Authentication
+4. Organization onboarding
+5. Event CRUD
+6. Public event pages
+7. Ticketing
+8. QR generation
+9. Check-in workflow
+10. Analytics
+
+Generate code step by step.
