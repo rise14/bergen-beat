@@ -498,26 +498,41 @@ export async function rejectSubmission(formData: FormData) {
 
 // ─── Bulk publish ─────────────────────────────────────────────────────────────
 
+// ponytail: supabase-js serializes .in("id", ids) into the request URL, so a
+// large selection overflows the gateway's URL length limit → bare 400. Chunk it.
+const ID_CHUNK = 50;
+async function inChunks(
+  ids: string[],
+  run: (batch: string[]) => PromiseLike<{ data: { id: string }[] | null; error: { message: string } | null }>,
+): Promise<number> {
+  let count = 0;
+  for (let i = 0; i < ids.length; i += ID_CHUNK) {
+    const { data, error } = await run(ids.slice(i, i + ID_CHUNK));
+    if (error) throw new Error(error.message);
+    count += data?.length ?? 0;
+  }
+  return count;
+}
+
 export async function bulkPublishEvents(ids: string[]): Promise<{ count: number }> {
   if (!ids.length) return { count: 0 };
 
   const supabase = createAdminSupabaseClient();
   const now = new Date().toISOString();
 
-  const { data, error } = await supabase
-    .from("events")
-    .update({ status: "published", published_at: now })
-    .in("id", ids)
-    .eq("status", "draft")   // only promote drafts, never touch already-published
-    .select("id");
-
-  if (error) throw new Error(error.message);
+  const count = await inChunks(ids, (batch) =>
+    supabase
+      .from("events")
+      .update({ status: "published", published_at: now })
+      .in("id", batch)
+      .eq("status", "draft")   // only promote drafts, never touch already-published
+      .select("id"));
 
   revalidatePath("/admin/events");
   revalidatePath("/");
   revalidatePath("/events");
 
-  return { count: data?.length ?? 0 };
+  return { count };
 }
 
 // ─── Delete subscriber ────────────────────────────────────────────────────────
@@ -614,18 +629,17 @@ export async function bulkDeleteDraftEvents(ids: string[]): Promise<{ count: num
 
   const supabase = createAdminSupabaseClient();
 
-  const { data, error } = await supabase
-    .from("events")
-    .delete()
-    .in("id", ids)
-    .eq("status", "draft")   // safety: never bulk-delete published events
-    .select("id");
-
-  if (error) throw new Error(error.message);
+  const count = await inChunks(ids, (batch) =>
+    supabase
+      .from("events")
+      .delete()
+      .in("id", batch)
+      .eq("status", "draft")   // safety: never bulk-delete published events
+      .select("id"));
 
   revalidatePath("/admin/events");
 
-  return { count: data?.length ?? 0 };
+  return { count };
 }
 
 // ─── Bulk archive (any status) ────────────────────────────────────────────────
@@ -636,20 +650,19 @@ export async function bulkArchiveEvents(ids: string[]): Promise<{ count: number 
   const supabase = createAdminSupabaseClient();
   const now = new Date().toISOString();
 
-  const { data, error } = await supabase
-    .from("events")
-    .update({ status: "archived", updated_at: now })
-    .in("id", ids)
-    .in("status", ["published", "draft"])
-    .select("id");
-
-  if (error) throw new Error(error.message);
+  const count = await inChunks(ids, (batch) =>
+    supabase
+      .from("events")
+      .update({ status: "archived", updated_at: now })
+      .in("id", batch)
+      .in("status", ["published", "draft"])
+      .select("id"));
 
   revalidatePath("/admin/events");
   revalidatePath("/");
   revalidatePath("/events");
 
-  return { count: data?.length ?? 0 };
+  return { count };
 }
 
 // ─── Bulk unpublish (published → draft) ──────────────────────────────────────
@@ -660,20 +673,19 @@ export async function bulkUnpublishEvents(ids: string[]): Promise<{ count: numbe
   const supabase = createAdminSupabaseClient();
   const now = new Date().toISOString();
 
-  const { data, error } = await supabase
-    .from("events")
-    .update({ status: "draft", published_at: null, updated_at: now })
-    .in("id", ids)
-    .eq("status", "published")
-    .select("id");
-
-  if (error) throw new Error(error.message);
+  const count = await inChunks(ids, (batch) =>
+    supabase
+      .from("events")
+      .update({ status: "draft", published_at: null, updated_at: now })
+      .in("id", batch)
+      .eq("status", "published")
+      .select("id"));
 
   revalidatePath("/admin/events");
   revalidatePath("/");
   revalidatePath("/events");
 
-  return { count: data?.length ?? 0 };
+  return { count };
 }
 
 // ─── Update venue ─────────────────────────────────────────────────────────────
