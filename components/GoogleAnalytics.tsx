@@ -16,12 +16,27 @@ import Script from "next/script";
 import { GtmRouteTracker } from "@/components/Analytics";
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ?? "GTM-5NG87RK5";
+const GA_ID = "G-ZJBTWGXVD3";
 
 export function GoogleTagManager() {
   if (!GTM_ID) return null;
 
   return (
     <>
+      {/* GA4 gtag.js */}
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+        strategy="afterInteractive"
+      />
+      <Script id="ga4-init" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GA_ID}');
+        `}
+      </Script>
+
       {/* GTM script — loads the container */}
       <Script id="gtm-script" strategy="afterInteractive">
         {`
