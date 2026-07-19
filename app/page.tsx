@@ -72,6 +72,17 @@ export default async function HomePage({ searchParams }: Props) {
         {/* Dark overlay so text stays legible */}
         <div className="absolute inset-0 bg-navy-800/45" aria-hidden="true" />
 
+        {/* Halftone texture — a newspaper "beat" reads through the dot screen */}
+        <div
+          className="absolute inset-0 opacity-30 mix-blend-multiply"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(15,29,58,0.8) 1px, transparent 1px)",
+            backgroundSize: "4px 4px",
+          }}
+          aria-hidden="true"
+        />
+
         {/* Content sits above the overlay */}
         <div className="relative z-10">
           <h1 className="flex justify-center">

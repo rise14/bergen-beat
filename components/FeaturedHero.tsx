@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { Event } from "@/types";
 import { formatShortDate, formatEventTime } from "@/lib/dates";
+import { CategoryIcon } from "@/components/CategoryIcon";
 
 interface Props {
   events: Event[];
@@ -12,7 +13,7 @@ export function FeaturedHero({ events }: Props) {
   const [primary, ...rest] = events;
   const secondaries = rest.slice(0, 2); // show at most 2 secondary cards
 
-  const category = primary.category as { name: string; icon: string | null; color: string | null } | null;
+  const category = primary.category as { name: string; slug: string; icon: string | null; color: string | null } | null;
   const venue    = primary.venue    as { name: string; city: string | null; slug?: string } | null;
 
   return (
@@ -47,11 +48,8 @@ export function FeaturedHero({ events }: Props) {
           {/* Content */}
           <div className="relative mt-auto p-6">
             {category && (
-              <span
-                className="mb-2 inline-block rounded-full px-3 py-0.5 text-xs font-semibold text-white"
-                style={{ background: category.color ?? "#dc8f53" }}
-              >
-                {category.icon} {category.name}
+              <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-accent-orange px-3 py-0.5 text-xs font-semibold text-white">
+                <CategoryIcon slug={category.slug} /> {category.name}
               </span>
             )}
             <h3 className="font-serif text-xl font-bold leading-snug text-white sm:text-2xl">
@@ -72,7 +70,7 @@ export function FeaturedHero({ events }: Props) {
         {/* ── Secondary cards ── */}
         <div className="flex flex-col gap-4">
           {secondaries.map((event) => {
-            const cat = event.category as { name: string; icon: string | null; color: string | null } | null;
+            const cat = event.category as { name: string; slug: string; icon: string | null; color: string | null } | null;
             const v   = event.venue   as { name: string; city: string | null } | null;
             return (
               <a
@@ -93,15 +91,12 @@ export function FeaturedHero({ events }: Props) {
                     <div className="absolute inset-0 bg-gradient-to-t from-navy-900/90 via-navy-900/30 to-transparent" />
                   </>
                 ) : (
-                  <div
-                    className="absolute inset-0 opacity-20"
-                    style={{ background: cat?.color ?? "#1a2e5a" }}
-                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-navy-800 to-navy-900" />
                 )}
                 <div className="relative mt-auto p-4">
                   {cat && (
-                    <p className="mb-1 text-xs font-semibold text-accent-orange">
-                      {cat.icon} {cat.name}
+                    <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-accent-orange">
+                      <CategoryIcon slug={cat.slug} /> {cat.name}
                     </p>
                   )}
                   <h3 className="font-serif text-sm font-bold leading-snug text-white line-clamp-2">

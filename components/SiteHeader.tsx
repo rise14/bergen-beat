@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { Search } from "lucide-react";
 
 const NAV_LINKS = [
   { href: "/events",        label: "Events" },
@@ -58,7 +59,7 @@ export function SiteHeader() {
               placeholder="Search events…"
               className="w-44 rounded-full border border-navy-700 bg-navy-900 py-1.5 pl-8 pr-3 text-sm text-sky placeholder-sky/50 outline-none transition focus:w-56 focus:border-sky focus:bg-navy-800 focus:text-white"
             />
-            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sky/60 text-xs">🔍</span>
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-sky/60" strokeWidth={2} aria-hidden="true" />
           </form>
           <a href="/submit"
             className="rounded-full bg-accent-orange px-4 py-1.5 font-semibold text-white hover:bg-walnut transition-colors text-sm">
@@ -73,7 +74,7 @@ export function SiteHeader() {
             className="p-2 text-sky"
             aria-label="Search"
           >
-            🔍
+            <Search className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
           </button>
           <button
             onClick={() => setOpen((prev) => !prev)}
@@ -99,7 +100,7 @@ export function SiteHeader() {
               placeholder="Search events and venues…"
               className="w-full rounded-full border border-navy-700 bg-navy-800 py-2.5 pl-9 pr-4 text-sm text-white placeholder-sky/50 outline-none focus:border-sky"
             />
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sky/60 text-sm">🔍</span>
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sky/60" strokeWidth={2} aria-hidden="true" />
           </form>
         </div>
       )}

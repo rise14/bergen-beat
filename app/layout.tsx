@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Lora } from "next/font/google";
+import Image from "next/image";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { GoogleTagManager, GoogleTagManagerNoscript } from "@/components/GoogleAnalytics";
@@ -75,8 +76,14 @@ export default function RootLayout({
         <footer className="mt-16 bg-navy-800">
           <div className="mx-auto max-w-6xl px-4 py-10 flex flex-col sm:flex-row justify-between gap-6">
             <div>
-              <p className="text-sm font-semibold text-white">🎵 Bergen Beat</p>
-              <p className="mt-1 text-xs text-sky">Events in Bergen County, NJ</p>
+              <Image
+                src="/bergen-beat-logo.png"
+                alt="Bergen Beat"
+                width={79}
+                height={32}
+                className="h-7 w-auto brightness-0 invert"
+              />
+              <p className="mt-2 text-xs text-sky">Events in Bergen County, NJ</p>
             </div>
             <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
               <a href="/events"          className="text-sky hover:text-white transition-colors">Events</a>

@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { Star, MapPin } from "lucide-react";
 import type { Event } from "@/types";
 import { formatShortDate, formatEventTime } from "@/lib/dates";
+import { CategoryIcon } from "@/components/CategoryIcon";
 
 interface Props {
   event: Event;
@@ -34,11 +36,8 @@ export function EventCard({ event, priority = false }: Props) {
             priority={priority}
           />
         ) : (
-          <div
-            className="flex h-full items-center justify-center text-4xl"
-            style={{ backgroundColor: event.category?.color ?? "#f5e6d0" }}
-          >
-            {event.category?.icon ?? "📅"}
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-cream-100 to-navy-50 text-navy-600/40">
+            <CategoryIcon slug={event.category?.slug} className="h-10 w-10" />
           </div>
         )}
 
@@ -55,15 +54,15 @@ export function EventCard({ event, priority = false }: Props) {
             Sponsored
           </span>
         ) : event.featured ? (
-          <span className="absolute right-3 top-3 rounded-full bg-navy-800 px-2.5 py-0.5 text-xs font-semibold text-sky-light">
-            ⭐ Featured
+          <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-navy-800 px-2.5 py-0.5 text-xs font-semibold text-sky-light">
+            <Star className="h-3 w-3" strokeWidth={2} aria-hidden="true" /> Featured
           </span>
         ) : null}
 
         {/* Outside Bergen badge */}
         {event.is_outside_bergen && (
-          <span className="absolute left-3 bottom-3 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-medium text-walnut">
-            📍 Outside Bergen
+          <span className="absolute left-3 bottom-3 flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-medium text-walnut">
+            <MapPin className="h-3 w-3" strokeWidth={2} aria-hidden="true" /> Outside Bergen
           </span>
         )}
       </div>
@@ -72,8 +71,8 @@ export function EventCard({ event, priority = false }: Props) {
       <div className="flex flex-1 flex-col p-4">
         {/* Category */}
         {event.category && (
-          <span className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-accent-orange">
-            {event.category.icon} {event.category.name}
+          <span className="mb-1.5 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-accent-orange">
+            <CategoryIcon slug={event.category.slug} /> {event.category.name}
           </span>
         )}
 
