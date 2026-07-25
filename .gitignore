@@ -25,6 +25,7 @@ Thumbs.db
 
 # Local Claude notes
 CLAUDE.md
+DEPLOYMENT.md
 
 # Logs
 npm-debug.log*
