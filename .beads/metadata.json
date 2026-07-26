@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "bergen_beat",
+  "project_id": "77d41664-9bc7-4025-87ff-afdb45d26ada"
+}
