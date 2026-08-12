@@ -85,7 +85,11 @@ export default async function HomePage({ searchParams }: Props) {
 
         {/* Content sits above the overlay */}
         <div className="relative z-10">
-          <h1 className="flex justify-center">
+          {/* The visible wordmark is an image, so the crawlable <h1> is a
+              screen-reader-only text heading. Ahrefs Site Audit flagged this
+              page with nrH1=1 / h1Length=0 when the <h1> wrapped only <Image>. */}
+          <h1 className="sr-only">Bergen Beat — Events in Bergen County, NJ</h1>
+          <div className="flex justify-center">
             {/* Logo: 1230×498px intrinsic, displayed at max-w-xs (320px) */}
             <Image
               src="/bergen-beat-logo.png"
@@ -95,7 +99,7 @@ export default async function HomePage({ searchParams }: Props) {
               priority
               className="h-auto w-full max-w-xs brightness-0 invert"
             />
-          </h1>
+          </div>
           <p className="mx-auto mt-4 max-w-md text-base text-white">
             What&apos;s happening in Bergen County, NJ — concerts, markets, festivals, food, and more.
           </p>
