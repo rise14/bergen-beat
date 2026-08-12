@@ -14,8 +14,11 @@ const siteUrl = canonicalSiteUrl;
 
 export const metadata: Metadata = {
   title: "All Events",
+  // Keep between 110–160 chars (Ahrefs Site Audit: "Meta description too short").
+  // This static description is served for every /events filter combination
+  // (?date=, ?neighborhood=, ?free=), all of which canonicalise to /events.
   description:
-    "Browse all upcoming events in Bergen County, NJ. Filter by category, neighborhood, date, and more.",
+    "Browse every upcoming event in Bergen County, NJ — concerts, festivals, markets, and family days out. Filter by category, town, date, or free entry.",
   alternates: { canonical: `${siteUrl}/events` },
   openGraph: { url: `${siteUrl}/events` },
 };
