@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/EventGrid";
-import { buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import type { Event } from "@/types";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+const siteUrl = canonicalSiteUrl;
 
 /** Returns the upcoming Fri 00:00 → Sun 23:59 in ET. */
 function getWeekendRange(): { start: Date; end: Date; label: string } {

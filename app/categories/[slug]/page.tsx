@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCategoryBySlug, getCategories } from "@/lib/categories";
 import { getPublishedEvents } from "@/lib/events";
-import { buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 
 export const revalidate = 3600;
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+const siteUrl = canonicalSiteUrl;
 
 interface Props {
   params: { slug: string };

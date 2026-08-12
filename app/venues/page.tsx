@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { getActiveVenues } from "@/lib/venues";
+import { canonicalSiteUrl } from "@/lib/seo";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+const siteUrl = canonicalSiteUrl;
 
 export const metadata: Metadata = {
   title: "Event Venues",
