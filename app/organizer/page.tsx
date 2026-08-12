@@ -3,7 +3,13 @@ import { redirect } from "next/navigation";
 import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
 import { formatEventDate } from "@/lib/dates";
 
-export const metadata: Metadata = { title: "My Events | Bergen Beat Organizer Portal" };
+// Private, login-gated dashboard: anonymous crawlers only ever see an empty
+// shell (Ahrefs Site Audit flagged it for a missing <h1>). It has no business
+// in the index, so keep it out rather than inventing public content for it.
+export const metadata: Metadata = {
+  title: "My Events | Bergen Beat Organizer Portal",
+  robots: { index: false, follow: false },
+};
 export const dynamic = "force-dynamic";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
