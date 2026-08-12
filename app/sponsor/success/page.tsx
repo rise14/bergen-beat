@@ -81,8 +81,8 @@ export default async function SponsorSuccessPage({ searchParams }: Props) {
 
       <p className="mt-8 text-xs text-gray-400">
         A confirmation email is on its way. Questions?{" "}
-        <a href="mailto:hi@bergenbeat.net" className="text-accent-orange hover:underline">
-          hi@bergenbeat.net
+        <a href="mailto:admin@bergenbeat.net" className="text-accent-orange hover:underline">
+          admin@bergenbeat.net
         </a>
       </p>
     </div>

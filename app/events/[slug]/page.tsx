@@ -265,7 +265,7 @@ export default async function EventPage({ params, searchParams }: Props) {
           {/* Suggest an edit */}
           <div className="border-t border-gray-100 pt-4">
             <a
-              href={`mailto:${process.env.ADMIN_EMAIL ?? "hi@bergenbeat.net"}?subject=${encodeURIComponent(`Suggest an edit: ${event.title}`)}&body=${encodeURIComponent(`Hi,\n\nI'd like to suggest an update to this event:\nhttps://www.bergenbeat.net/events/${event.slug}\n\nHere's what needs fixing:\n\n`)}`}
+              href={`mailto:${process.env.ADMIN_EMAIL ?? "admin@bergenbeat.net"}?subject=${encodeURIComponent(`Suggest an edit: ${event.title}`)}&body=${encodeURIComponent(`Hi,\n\nI'd like to suggest an update to this event:\nhttps://www.bergenbeat.net/events/${event.slug}\n\nHere's what needs fixing:\n\n`)}`}
               className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-accent-orange"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
