@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getNeighborhoods } from "@/lib/neighborhoods";
-import { buildItemListJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildItemListJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+const siteUrl = canonicalSiteUrl;
 
 export const metadata: Metadata = {
   title: "Things to Do by Town in Bergen County, NJ",

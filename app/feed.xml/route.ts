@@ -1,9 +1,10 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import type { Event } from "@/types";
+import { canonicalSiteUrl } from "@/lib/seo";
 
 export const revalidate = 3600; // regenerate every hour
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+const SITE_URL = canonicalSiteUrl;
 
 // Escape characters that break XML
 function xmlEscape(str: string): string {
