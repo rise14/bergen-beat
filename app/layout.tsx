@@ -94,6 +94,7 @@ export default function RootLayout({
               <a href="/categories"     className="text-sky hover:text-white transition-colors">Categories</a>
               <a href="/neighborhoods"  className="text-sky hover:text-white transition-colors">Neighborhoods</a>
               <a href="/towns"          className="text-sky hover:text-white transition-colors">Towns</a>
+              <a href="/venues"         className="text-sky hover:text-white transition-colors">Venues</a>
               <a href="/newsletter"     className="text-sky hover:text-white transition-colors">Newsletter</a>
               <a href="/organizer"      className="text-sky hover:text-white transition-colors">My Events</a>
               <a href="/sponsor"        className="text-sky hover:text-white transition-colors">Sponsor</a>

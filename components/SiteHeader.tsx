@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/this-weekend",  label: "This Weekend" },
   { href: "/categories",    label: "Categories" },
   { href: "/neighborhoods", label: "Neighborhoods" },
+  { href: "/venues",        label: "Venues" },
 ];
 
 export function SiteHeader() {
