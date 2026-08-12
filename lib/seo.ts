@@ -1,6 +1,41 @@
 import type { Event } from "@/types";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+// ─── Canonical site URL ───────────────────────────────────────────────────────
+// The canonical host is `www.bergenbeat.net`. next.config.js redirects the bare
+// apex (bergenbeat.net) to www, so any absolute URL we emit on the apex host is
+// a URL that immediately redirects — which breaks sitemaps (Ahrefs: "3XX
+// redirect in sitemap"), canonical tags and OG URLs.
+//
+// NEXT_PUBLIC_SITE_URL is set per environment and is easy to get wrong (a bare
+// apex value shipped to production is exactly how the sitemap ended up listing
+// 52 redirecting URLs). normalizeSiteUrl() makes that misconfiguration
+// harmless: it upgrades the apex host to www and trims a trailing slash so
+// concatenated paths never produce a double slash.
+//
+// Localhost and any other host are left alone, so dev and preview still work.
+export function normalizeSiteUrl(rawUrl: string): string {
+  let normalized = rawUrl.trim().replace(/\/+$/, "");
+
+  try {
+    const parsed = new URL(normalized);
+    if (parsed.hostname === "bergenbeat.net") {
+      parsed.hostname = "www.bergenbeat.net";
+      parsed.protocol = "https:";
+      normalized = parsed.toString().replace(/\/+$/, "");
+    }
+  } catch {
+    // Not a parseable absolute URL — return the trimmed value untouched rather
+    // than throwing during a build.
+  }
+
+  return normalized;
+}
+
+export const canonicalSiteUrl = normalizeSiteUrl(
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net"
+);
+
+const siteUrl = canonicalSiteUrl;
 
 // ─── Event JSON-LD ────────────────────────────────────────────────────────────
 // Build a JSON-LD Event schema for Google's event rich results.
