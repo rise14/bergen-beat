@@ -4,7 +4,7 @@ import Image from "next/image";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { GoogleTagManager, GoogleTagManagerNoscript } from "@/components/GoogleAnalytics";
-import { buildOrganizationJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildOrganizationJsonLd } from "@/lib/seo";
 
 const lora = Lora({
   subsets: ["latin"],
@@ -19,9 +19,7 @@ export const metadata: Metadata = {
   },
   description:
     "Discover the best local events in Bergen County, NJ — concerts, markets, festivals, food events, and more.",
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net"
-  ),
+  metadataBase: new URL(canonicalSiteUrl),
   openGraph: {
     siteName: "Bergen Beat",
     type: "website",

@@ -8,8 +8,9 @@ import { getPublishedEvents } from "@/lib/events";
 import { getCategories } from "@/lib/categories";
 import { getNeighborhoods } from "@/lib/neighborhoods";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
+import { canonicalSiteUrl } from "@/lib/seo";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+const siteUrl = canonicalSiteUrl;
 
 export const metadata: Metadata = {
   title: "All Events",

@@ -3,10 +3,10 @@ import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/EventGrid";
 import { Pagination } from "@/components/Pagination";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
-import { buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import type { Event } from "@/types";
 
-const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+const siteUrl  = canonicalSiteUrl;
 const PAGE_SIZE = 24;
 
 // Slugs to match — covers however outdoor/nature was named in the DB
