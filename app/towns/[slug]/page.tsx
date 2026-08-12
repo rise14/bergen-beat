@@ -159,9 +159,15 @@ export default async function TownPage({ params }: Props) {
       {/* Nearby venues */}
       {nb.venues.length > 0 && (
         <section className="mt-16">
-          <h2 className="mb-4 font-serif text-xl font-semibold text-navy-800">
-            Venues in {townName}
-          </h2>
+          <div className="mb-4 flex items-baseline justify-between gap-4">
+            <h2 className="font-serif text-xl font-semibold text-navy-800">
+              Venues in {townName}
+            </h2>
+            <a href="/venues"
+              className="shrink-0 text-sm font-medium text-accent-orange hover:underline">
+              All venues →
+            </a>
+          </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {nb.venues.map((v) => (
               <a key={v.id} href={`/venues/${v.slug}`}
