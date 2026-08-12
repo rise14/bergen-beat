@@ -1,7 +1,9 @@
 import type { MetadataRoute } from "next";
+import { canonicalSiteUrl } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+  // Advertise the sitemap on the canonical www host — the apex redirects.
+  const siteUrl = canonicalSiteUrl;
 
   return {
     rules: [

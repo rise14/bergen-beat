@@ -1,7 +1,10 @@
 import { MetadataRoute } from "next";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { canonicalSiteUrl } from "@/lib/seo";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+// Always emit the canonical www host — apex URLs redirect, and a sitemap must
+// only list non-redirecting URLs.
+const siteUrl = canonicalSiteUrl;
 
 // Regenerate at most once per hour
 export const revalidate = 3600;
