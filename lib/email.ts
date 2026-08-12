@@ -804,7 +804,7 @@ export async function sendSponsorshipConfirmation({
 
         <p style="font-size:13px;color:#6b7280;margin:0;">
           Questions? Reply to this email or reach us at
-          <a href="mailto:hi@bergenbeat.net" style="color:#e05a2b;">hi@bergenbeat.net</a>.
+          <a href="mailto:admin@bergenbeat.net" style="color:#e05a2b;">admin@bergenbeat.net</a>.
         </p>
       </div>
     `,
