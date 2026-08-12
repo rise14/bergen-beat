@@ -46,6 +46,11 @@ const nextConfig = {
         hostname: "*.ticketm.net",
       },
       {
+        // mybergen.com event images
+        protocol: "https",
+        hostname: "www.mybergen.com",
+      },
+      {
         // Unsplash images (used as fallback banners for PredictHQ events)
         protocol: "https",
         hostname: "images.unsplash.com",
