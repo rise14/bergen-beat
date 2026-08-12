@@ -79,11 +79,36 @@ const SEGMENT_MAP: Record<string, string> = {
   "Undefined":      "Community",
 };
 
+// Ticketmaster's image array includes a `_SOURCE` original: the uncompressed
+// master asset (often 5+ MB PNG, several thousand px wide). Picking it by
+// "largest width" means every card and hero downloads a multi-megabyte file,
+// which Ahrefs Site Audit flags as "Image file size too large" — the Next.js
+// optimizer preserves the source format/size for these and cannot rescue them.
+// The retail variants (1024x576, 640x360, ...) are what we actually want.
+const MAX_BANNER_WIDTH = 1920;
+
+function isSourceOriginal(img: TmImage): boolean {
+  return /_SOURCE(\b|$|\?)/i.test(img.url) || (img.width ?? 0) > MAX_BANNER_WIDTH;
+}
+
 function pickBestImage(images: TmImage[] | null | undefined): string | null {
   if (!images?.length) return null;
-  // Prefer 16:9 wide images; fallback to largest available
-  const wide = images.filter((i) => i.ratio === "16_9").sort((a, b) => (b.width ?? 0) - (a.width ?? 0));
-  return wide[0]?.url ?? images[0]?.url ?? null;
+
+  // Widest usable variant wins, but never the uncompressed `_SOURCE` master
+  // and never anything wider than our largest rendered breakpoint.
+  const usable = images.filter((i) => !isSourceOriginal(i));
+  const byWidthDesc = (a: TmImage, b: TmImage) => (b.width ?? 0) - (a.width ?? 0);
+
+  // Prefer 16:9 (matches the aspect ratio of our card + hero frames).
+  const wide = usable.filter((i) => i.ratio === "16_9").sort(byWidthDesc);
+  if (wide[0]) return wide[0].url;
+
+  const anyUsable = [...usable].sort(byWidthDesc);
+  if (anyUsable[0]) return anyUsable[0].url;
+
+  // Every candidate was an oversized original: skip the banner rather than
+  // ship a multi-megabyte image. Unsplash fallback fills it in downstream.
+  return null;
 }
 
 function normalizeEvent(tm: TmEvent): ImportedEvent {
