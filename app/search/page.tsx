@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { SearchClient } from "@/components/SearchClient";
 import type { SearchResults } from "@/app/api/search/route";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { canonicalSiteUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+const siteUrl = canonicalSiteUrl;
 
 interface Props {
   searchParams: { q?: string };

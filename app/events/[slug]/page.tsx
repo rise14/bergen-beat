@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getEventBySlug, getEventBySlugAdmin, getRelatedEvents } from "@/lib/events";
-import { buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
 import { AddToCalendar } from "@/components/AddToCalendar";
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const event = await getEventBySlug(params.slug);
   if (!event) return {};
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net";
+  const siteUrl = canonicalSiteUrl;
   const canonicalUrl = `${siteUrl}/events/${event.slug}`;
 
   return {
@@ -246,7 +246,7 @@ export default async function EventPage({ params, searchParams }: Props) {
 
           {/* Share */}
           <ShareButtons
-            url={`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bergenbeat.net"}/events/${event.slug}`}
+            url={`${canonicalSiteUrl}/events/${event.slug}`}
             title={event.title}
           />
 
