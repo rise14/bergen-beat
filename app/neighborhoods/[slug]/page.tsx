@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getNeighborhoodDetails, getNeighborhoods } from "@/lib/neighborhoods";
 import { getPublishedEvents } from "@/lib/events";
-import { canonicalSiteUrl, buildOpenGraph, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd } from "@/lib/seo";
-import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 
 export const revalidate = 3600;

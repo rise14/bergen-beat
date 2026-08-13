@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { Event } from "@/types";
 
 // ─── Canonical site URL ───────────────────────────────────────────────────────
@@ -38,58 +39,53 @@ export const canonicalSiteUrl = normalizeSiteUrl(
 const siteUrl = canonicalSiteUrl;
 
 // ─── Open Graph ───────────────────────────────────────────────────────────────
-// Next.js App Router REPLACES a parent's `openGraph` object with the child's
-// rather than merging field-by-field. So any route that declared its own
-// `openGraph: { url, title }` silently dropped the `type`, `siteName` and
-// `locale` set in app/layout.tsx — which is how 258 pages ended up flagged by
-// Ahrefs Site Audit as "Open Graph tags incomplete" (missing og:type).
+// Ahrefs Site Audit ("Open Graph tags incomplete") requires FOUR tags on every
+// page: og:title, og:type, og:image and og:url.
 //
-// The same replacement disables the convention-based default image at
-// app/opengraph-image.tsx, so those routes emitted no og:image either.
+// The trap: Next.js does NOT deep-merge the `openGraph` object from the root
+// layout into a page's own metadata — a page that declares `openGraph: { url }`
+// REPLACES the parent object wholesale and silently drops og:type, og:site_name
+// and og:locale. That's how 258 pages ended up without og:type despite the root
+// layout declaring `type: "website"`.
 //
-// buildOpenGraph() re-applies the site-wide defaults on every call. Always
-// build a route's `openGraph` through it instead of writing the object inline.
-
-/** Absolute URL of the generated 1200×630 default OG image (app/opengraph-image.tsx). */
-export const defaultOgImageUrl = `${siteUrl}/opengraph-image`;
-
-export const defaultOgImage = {
-  url: defaultOgImageUrl,
-  width: 1200,
-  height: 630,
-  alt: "Bergen Beat — Events in Bergen County, NJ",
-} as const;
+// So never write a bare `openGraph: {...}` literal in a page. Call this helper:
+// it re-states the shared defaults every time, so the emitted tag set is always
+// complete regardless of what the parent declared.
+//
+// og:image is deliberately NOT set here. Next.js file-based OG images
+// (`opengraph-image.tsx`) are injected automatically per route segment, and an
+// explicit `images` value — including an empty array — overrides them. Pass
+// `images` only for a genuinely page-specific image (e.g. an event banner), and
+// pass `undefined` (never `[]`) to fall back to the segment's generated image.
 
 export interface OpenGraphInput {
-  /** Absolute canonical URL of the page. Required — og:url must match rel=canonical. */
+  /** Page path ("/venues/foo") or absolute URL. Becomes og:url — always absolute. */
   url: string;
   title?: string;
   description?: string;
-  /**
-   * Page-specific images. Omit (or pass an empty array) to fall back to the
-   * site default — never leave a page without an og:image.
-   */
-  images?: { url: string; width?: number; height?: number; alt?: string }[];
-  /** Defaults to "website"; event detail pages may pass "article". */
+  /** Omit entirely to inherit the route segment's opengraph-image.tsx. */
+  images?: NonNullable<Metadata["openGraph"]>["images"];
+  /** Defaults to "website"; event detail pages pass "article". */
   type?: "website" | "article";
 }
 
-/**
- * Build a complete Open Graph object: always emits the four tags Ahrefs
- * requires (og:title, og:type, og:image, og:url) plus siteName and locale.
- */
-export function buildOpenGraph(input: OpenGraphInput) {
-  const images =
-    input.images && input.images.length > 0 ? input.images : [defaultOgImage];
+export function buildOpenGraph(input: OpenGraphInput): Metadata["openGraph"] {
+  const absoluteUrl = input.url.startsWith("http")
+    ? input.url
+    : `${siteUrl}${input.url.startsWith("/") ? "" : "/"}${input.url}`;
 
   return {
-    type: input.type ?? ("website" as const),
+    type: input.type ?? "website",
     siteName: "Bergen Beat",
     locale: "en_US",
-    url: input.url,
-    ...(input.title ? { title: input.title } : {}),
+    url: absoluteUrl,
+    ...(input.title       ? { title: input.title }             : {}),
     ...(input.description ? { description: input.description } : {}),
-    images,
+    // Only include `images` when a real image was supplied — an empty array
+    // would suppress the file-based OG image for the segment.
+    ...(input.images && (!Array.isArray(input.images) || input.images.length > 0)
+      ? { images: input.images }
+      : {}),
   };
 }
 

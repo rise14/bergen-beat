@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { getActiveVenues } from "@/lib/venues";
-import { canonicalSiteUrl, buildOpenGraph } from "@/lib/seo";
-import { canonicalSiteUrl } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl } from "@/lib/seo";
 
 const siteUrl = canonicalSiteUrl;
 

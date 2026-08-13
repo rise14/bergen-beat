@@ -6,8 +6,7 @@ import { CategoryPill } from "@/components/CategoryPill";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { getFeaturedEvents, getUpcomingEvents, getPublishedEvents, getTrendingEvents } from "@/lib/events";
 import { getCategories } from "@/lib/categories";
-import { canonicalSiteUrl, buildOpenGraph, buildWebSiteJsonLd } from "@/lib/seo";
-import { canonicalSiteUrl, buildWebSiteJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildWebSiteJsonLd } from "@/lib/seo";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 
 const siteUrl = canonicalSiteUrl;

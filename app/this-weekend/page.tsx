@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/EventGrid";
-import { canonicalSiteUrl, buildOpenGraph, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
-import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import type { Event } from "@/types";
 
 const siteUrl = canonicalSiteUrl;

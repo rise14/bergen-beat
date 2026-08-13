@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SubmitForm } from "@/components/SubmitForm";
 import { getCategories } from "@/lib/categories";
-import { canonicalSiteUrl, buildOpenGraph } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl } from "@/lib/seo";
 
 const siteUrl = canonicalSiteUrl;
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     "Know about a great local event in Bergen County? Submit it to Bergen Beat and we'll review it within 2 business days.",
   openGraph: buildOpenGraph({
     url: `${siteUrl}/submit`,
-    title: "Submit an Event",
+    title: "Submit an Event to Bergen Beat",
     description:
       "Know about a great local event in Bergen County? Submit it to Bergen Beat and we'll review it within 2 business days.",
   }),

@@ -1,5 +1,5 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { SponsorClient } from "@/components/SponsorClient";
 import { canonicalSiteUrl, buildOpenGraph } from "@/lib/seo";
 
@@ -17,7 +17,6 @@ export const metadata: Metadata = {
       "Promote your Bergen County event to local subscribers — featured placement on Bergen Beat and in the weekly newsletter.",
   }),
 };
-import { SponsorClient } from "@/components/SponsorClient";
 
 interface Props {
   searchParams: { event?: string; cancelled?: string };

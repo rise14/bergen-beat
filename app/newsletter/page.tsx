@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
-import { canonicalSiteUrl, buildOpenGraph } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl } from "@/lib/seo";
 
 const siteUrl = canonicalSiteUrl;
 
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "Browse past Bergen Beat weekly digests — concerts, markets, festivals, and local events in Bergen County, NJ.",
   openGraph: buildOpenGraph({
     url: `${siteUrl}/newsletter`,
-    title: "Newsletter Archive",
+    title: "Bergen Beat Newsletter Archive",
     description:
       "Browse past Bergen Beat weekly digests — concerts, markets, festivals, and local events in Bergen County, NJ.",
   }),
