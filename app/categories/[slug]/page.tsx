@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCategoryBySlug, getCategories } from "@/lib/categories";
 import { getPublishedEvents } from "@/lib/events";
-import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildOpenGraph, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 
 export const revalidate = 3600;
@@ -26,11 +26,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${category.name} Events in Bergen County, NJ`,
     description: `Find the best ${category.name.toLowerCase()} events happening in Bergen County, NJ.`,
     alternates: { canonical: canonicalUrl },
-    openGraph: {
+    openGraph: buildOpenGraph({
       title: `${category.name} Events in Bergen County, NJ`,
       description: `Find the best ${category.name.toLowerCase()} events happening in Bergen County, NJ.`,
       url: canonicalUrl,
-    },
+    }),
   };
 }
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/EventGrid";
-import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildOpenGraph, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import type { Event } from "@/types";
 
 const siteUrl = canonicalSiteUrl;
@@ -40,11 +40,11 @@ export function generateMetadata(): Metadata {
     description:
       "Things to do this weekend in Bergen County, NJ. Concerts, markets, festivals, family events, and more — updated every week.",
     alternates: { canonical: `${siteUrl}/this-weekend` },
-    openGraph: {
+    openGraph: buildOpenGraph({
       url: `${siteUrl}/this-weekend`,
       title: `This Weekend in Bergen County`,
       description: `What's happening in Bergen County this weekend — ${label}`,
-    },
+    }),
   };
 }
 

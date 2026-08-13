@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/EventGrid";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
-import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildOpenGraph, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import type { Event } from "@/types";
 
 const siteUrl = canonicalSiteUrl;
@@ -12,11 +12,11 @@ export const metadata: Metadata = {
   description:
     "Find things to do today in Bergen County, NJ — concerts, markets, outdoor activities, family events, and more happening right now. Updated daily.",
   alternates: { canonical: `${siteUrl}/events/today` },
-  openGraph: {
+  openGraph: buildOpenGraph({
     url: `${siteUrl}/events/today`,
     title: "Things To Do Today in Bergen County, NJ",
     description: "Concerts, markets, outdoor activities and family events happening today in Bergen County.",
-  },
+  }),
 };
 
 export const dynamic = "force-dynamic";

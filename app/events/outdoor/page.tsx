@@ -3,7 +3,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/EventGrid";
 import { Pagination } from "@/components/Pagination";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
-import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildOpenGraph, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import type { Event } from "@/types";
 
 const siteUrl  = canonicalSiteUrl;
@@ -20,11 +20,11 @@ export const metadata: Metadata = {
   description:
     "Outdoor events in Bergen County, NJ — hikes, nature walks, park festivals, farmers markets, outdoor concerts, and more. Find things to do outside in Bergen County.",
   alternates: { canonical: `${siteUrl}/events/outdoor` },
-  openGraph: {
+  openGraph: buildOpenGraph({
     url: `${siteUrl}/events/outdoor`,
     title: "Outdoor Events in Bergen County, NJ",
     description: "Hikes, nature walks, park festivals, outdoor concerts, and more in Bergen County.",
-  },
+  }),
 };
 
 export const dynamic = "force-dynamic";
