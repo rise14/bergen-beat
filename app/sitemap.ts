@@ -9,9 +9,18 @@ const siteUrl = canonicalSiteUrl;
 // Regenerate at most once per hour
 export const revalidate = 3600;
 
+// Events stay published (and therefore indexable) until the nightly expiry cron
+// archives them 7 days after their effective end date — see
+// app/api/cron/expire/route.ts. The sitemap must use the SAME retention window,
+// otherwise every event in that 7-day tail is a live, internally linked,
+// indexable page missing from the sitemap.
+const RETENTION_DAYS = 7;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createAdminSupabaseClient();
-  const now = new Date().toISOString();
+  const retentionCutoff = new Date(
+    Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000
+  ).toISOString();
 
   const [
     { data: events },
@@ -23,12 +32,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .from("events")
       .select("slug, updated_at")
       .eq("status", "published")
-      .gte("start_date", now)
+      // Mirror the expiry cron's "effective end date" rule: use end_date when
+      // present, otherwise fall back to start_date.
+      // Values are double-quoted: an ISO timestamp is otherwise ambiguous
+      // inside PostgREST's comma/paren-delimited filter grammar.
+      .or(
+        `end_date.gte."${retentionCutoff}",` +
+          `and(end_date.is.null,start_date.gte."${retentionCutoff}")`
+      )
       .order("start_date", { ascending: true })
       .limit(5000),
     supabase.from("categories").select("slug"),
     supabase.from("neighborhoods").select("slug"),
-    supabase.from("venues").select("slug, updated_at").limit(2000),
+    // NOTE: `venues` has no `updated_at` column (only `events` does), so
+    // selecting it made PostgREST reject the whole query and silently return
+    // null — dropping all 84 venue URLs from the sitemap. Select only columns
+    // that exist.
+    supabase.from("venues").select("slug").limit(2000),
   ]);
 
   const today = new Date();
@@ -47,6 +67,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/events/outdoor`,changeFrequency: "daily",   priority: 0.8, lastModified: today },
     { url: `${siteUrl}/submit`,        changeFrequency: "monthly", priority: 0.4, lastModified: today },
     { url: `${siteUrl}/sponsor`,       changeFrequency: "monthly", priority: 0.5, lastModified: today },
+    { url: `${siteUrl}/newsletter`,    changeFrequency: "weekly",  priority: 0.5, lastModified: today },
     { url: `${siteUrl}/towns`,         changeFrequency: "weekly",  priority: 0.7, lastModified: today },
   ];
 
@@ -88,7 +109,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${siteUrl}/venues/${v.slug}`,
       changeFrequency: "weekly" as const,
       priority: 0.6,
-      lastModified: v.updated_at ? new Date(v.updated_at) : today,
+      // No per-venue timestamp available (see the select above).
+      lastModified: today,
     }));
 
   return [
