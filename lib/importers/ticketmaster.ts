@@ -8,6 +8,7 @@
  * Docs: https://developer.ticketmaster.com/products-and-docs/apis/discovery-api/v2/
  */
 
+import { MAX_BANNER_WIDTH, isOversizedBannerUrl } from "@/lib/bannerImage";
 import type { ImportedEvent } from "@/types";
 
 // Bergen County, NJ center point
@@ -85,10 +86,11 @@ const SEGMENT_MAP: Record<string, string> = {
 // which Ahrefs Site Audit flags as "Image file size too large" — the Next.js
 // optimizer preserves the source format/size for these and cannot rescue them.
 // The retail variants (1024x576, 640x360, ...) are what we actually want.
-const MAX_BANNER_WIDTH = 1920;
-
+// URL-shape detection lives in lib/bannerImage.ts so the same rule applies to
+// every source (RSS, iCal, submissions, admin) at write time; here we can also
+// use the width Ticketmaster reports in its image metadata.
 function isSourceOriginal(img: TmImage): boolean {
-  return /_SOURCE(\b|$|\?)/i.test(img.url) || (img.width ?? 0) > MAX_BANNER_WIDTH;
+  return isOversizedBannerUrl(img.url) || (img.width ?? 0) > MAX_BANNER_WIDTH;
 }
 
 function pickBestImage(images: TmImage[] | null | undefined): string | null {

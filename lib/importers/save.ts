@@ -12,6 +12,7 @@
  */
 
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { sanitizeBannerUrl } from "@/lib/bannerImage";
 import type { ImportedEvent } from "@/types";
 
 export interface SaveResult {
@@ -294,7 +295,8 @@ export async function saveImportedEvents(
           is_free: event.is_free,
           price_range: event.price_range,
           external_url: event.external_url,
-          banner_url: event.banner_url,
+          // Drop uncompressed master originals (multi-MB) regardless of source
+          banner_url: sanitizeBannerUrl(event.banner_url, `import:${event.source}`),
           organizer_name: event.organizer_name,
           source: event.source,
           external_id: event.external_id,

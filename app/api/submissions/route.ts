@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { sendSubmissionConfirmation, sendAdminNewSubmissionAlert } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { sanitizeBannerUrl } from "@/lib/bannerImage";
 
 const submissionSchema = z.object({
   title: z.string().min(3).max(200),
@@ -53,7 +54,11 @@ export async function POST(request: Request) {
   const supabase = createAdminSupabaseClient();
   const { data, error } = await supabase
     .from("event_submissions")
-    .insert(parsed.data)
+    .insert({
+      ...parsed.data,
+      // Reject uncompressed master originals (multi-MB) at the door
+      banner_url: sanitizeBannerUrl(parsed.data.banner_url, "submission") ?? undefined,
+    })
     .select("id")
     .single();
 
