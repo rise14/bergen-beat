@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getNeighborhoods } from "@/lib/neighborhoods";
-import { canonicalSiteUrl, buildItemListJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildItemListJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
 
 const siteUrl = canonicalSiteUrl;
 
@@ -9,11 +9,11 @@ export const metadata: Metadata = {
   description:
     "Find things to do in every town in Bergen County, NJ — Hackensack, Ridgewood, Paramus, Fort Lee, Englewood, Teaneck, and 60+ more municipalities.",
   alternates: { canonical: `${siteUrl}/towns` },
-  openGraph: {
+  openGraph: buildOpenGraph({
     url: `${siteUrl}/towns`,
     title: "Things to Do by Town in Bergen County, NJ",
     description: "Local events and activities in every Bergen County town — concerts, festivals, markets, family events, and more.",
-  },
+  }),
 };
 
 export const revalidate = 3600;

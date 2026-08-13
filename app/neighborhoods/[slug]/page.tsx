@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getNeighborhoodDetails, getNeighborhoods } from "@/lib/neighborhoods";
 import { getPublishedEvents } from "@/lib/events";
-import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 
 export const revalidate = 3600;
@@ -27,11 +27,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `Events in ${nb.name}, NJ`,
     description: `Find ${nb.upcomingCount} upcoming event${nb.upcomingCount !== 1 ? "s" : ""} in ${locationStr}. Concerts, markets, festivals, food events and more in Bergen County.`,
     alternates: { canonical: canonicalUrl },
-    openGraph: {
+    openGraph: buildOpenGraph({
       title: `Events in ${nb.name}, NJ`,
       description: `Discover what's happening in ${locationStr}.`,
       url: canonicalUrl,
-    },
+    }),
   };
 }
 

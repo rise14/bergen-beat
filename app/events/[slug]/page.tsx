@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getEventBySlug, getEventBySlugAdmin, getRelatedEvents } from "@/lib/events";
-import { canonicalSiteUrl, buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
 import { AddToCalendar } from "@/components/AddToCalendar";
@@ -32,14 +32,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: event.title,
     description: event.short_description ?? event.description?.slice(0, 155),
     alternates: { canonical: canonicalUrl },
-    openGraph: {
+    openGraph: buildOpenGraph({
+      type: "article",
       title: event.title,
       description: event.short_description ?? undefined,
       url: canonicalUrl,
+      // No banner → omit `images` entirely so Next.js falls back to this
+      // segment's opengraph-image.tsx. An empty array would suppress it.
       images: event.banner_url
         ? [{ url: event.banner_url, width: 1200, height: 630, alt: event.title }]
-        : [],
-    },
+        : undefined,
+    }),
   };
 }
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getNeighborhoods } from "@/lib/neighborhoods";
-import { canonicalSiteUrl, buildItemListJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildItemListJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
 
 const siteUrl = canonicalSiteUrl;
 
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description:
     "Browse local events by neighborhood across Bergen County, NJ — Hackensack, Ridgewood, Paramus, Fort Lee, Englewood, Teaneck, and more.",
   alternates: { canonical: `${siteUrl}/neighborhoods` },
-  openGraph: { url: `${siteUrl}/neighborhoods` },
+  openGraph: buildOpenGraph({ url: `${siteUrl}/neighborhoods` }),
 };
 
 export const revalidate = 3600;

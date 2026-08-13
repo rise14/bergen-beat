@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { Event } from "@/types";
 
 // ─── Canonical site URL ───────────────────────────────────────────────────────
@@ -36,6 +37,57 @@ export const canonicalSiteUrl = normalizeSiteUrl(
 );
 
 const siteUrl = canonicalSiteUrl;
+
+// ─── Open Graph ───────────────────────────────────────────────────────────────
+// Ahrefs Site Audit ("Open Graph tags incomplete") requires FOUR tags on every
+// page: og:title, og:type, og:image and og:url.
+//
+// The trap: Next.js does NOT deep-merge the `openGraph` object from the root
+// layout into a page's own metadata — a page that declares `openGraph: { url }`
+// REPLACES the parent object wholesale and silently drops og:type, og:site_name
+// and og:locale. That's how 258 pages ended up without og:type despite the root
+// layout declaring `type: "website"`.
+//
+// So never write a bare `openGraph: {...}` literal in a page. Call this helper:
+// it re-states the shared defaults every time, so the emitted tag set is always
+// complete regardless of what the parent declared.
+//
+// og:image is deliberately NOT set here. Next.js file-based OG images
+// (`opengraph-image.tsx`) are injected automatically per route segment, and an
+// explicit `images` value — including an empty array — overrides them. Pass
+// `images` only for a genuinely page-specific image (e.g. an event banner), and
+// pass `undefined` (never `[]`) to fall back to the segment's generated image.
+
+export interface OpenGraphInput {
+  /** Page path ("/venues/foo") or absolute URL. Becomes og:url — always absolute. */
+  url: string;
+  title?: string;
+  description?: string;
+  /** Omit entirely to inherit the route segment's opengraph-image.tsx. */
+  images?: NonNullable<Metadata["openGraph"]>["images"];
+  /** Defaults to "website"; event detail pages pass "article". */
+  type?: "website" | "article";
+}
+
+export function buildOpenGraph(input: OpenGraphInput): Metadata["openGraph"] {
+  const absoluteUrl = input.url.startsWith("http")
+    ? input.url
+    : `${siteUrl}${input.url.startsWith("/") ? "" : "/"}${input.url}`;
+
+  return {
+    type: input.type ?? "website",
+    siteName: "Bergen Beat",
+    locale: "en_US",
+    url: absoluteUrl,
+    ...(input.title       ? { title: input.title }             : {}),
+    ...(input.description ? { description: input.description } : {}),
+    // Only include `images` when a real image was supplied — an empty array
+    // would suppress the file-based OG image for the segment.
+    ...(input.images && (!Array.isArray(input.images) || input.images.length > 0)
+      ? { images: input.images }
+      : {}),
+  };
+}
 
 // ─── Event JSON-LD ────────────────────────────────────────────────────────────
 // Build a JSON-LD Event schema for Google's event rich results.

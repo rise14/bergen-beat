@@ -6,7 +6,7 @@ import { CategoryPill } from "@/components/CategoryPill";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { getFeaturedEvents, getUpcomingEvents, getPublishedEvents, getTrendingEvents } from "@/lib/events";
 import { getCategories } from "@/lib/categories";
-import { canonicalSiteUrl, buildWebSiteJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildWebSiteJsonLd } from "@/lib/seo";
 import { FeaturedCarousel } from "@/components/FeaturedCarousel";
 
 const siteUrl = canonicalSiteUrl;
@@ -14,7 +14,7 @@ const siteUrl = canonicalSiteUrl;
 export const metadata: Metadata = {
   title: "Bergen Beat — Events in Bergen County, NJ",
   alternates: { canonical: siteUrl },
-  openGraph: { url: siteUrl },
+  openGraph: buildOpenGraph({ url: siteUrl }),
 };
 
 export const revalidate = 300;

@@ -126,3 +126,23 @@ bd prime                # Refresh Beads context
 
 **Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
 <!-- END BEADS CODEX SETUP -->
+
+## Open Graph metadata (Ahrefs: "Open Graph tags incomplete")
+
+Ahrefs Site Audit requires **four** OG tags on every page: `og:title`, `og:type`,
+`og:image`, `og:url`. Two Next.js behaviours make this easy to break:
+
+1. **`openGraph` is replaced, not merged.** A page declaring `openGraph: { url }`
+   discards the root layout's `type` / `siteName` / `locale`. Never write a bare
+   `openGraph: {...}` literal in a page — call `buildOpenGraph()` from `lib/seo.ts`,
+   which re-states the shared defaults every time.
+2. **`opengraph-image.tsx` is per segment.** It is not inherited by a nested
+   segment that declares its own `openGraph`. Every segment needing the default
+   card re-exports `components/og/DefaultOGImage.tsx` from its own
+   `opengraph-image.tsx` (one-line re-export).
+
+Also: never pass `images: []` — an empty array *suppresses* the file-based OG
+image. Pass `undefined` to fall back to the segment's generated image.
+
+When adding a new route: call `buildOpenGraph()` in its metadata, and add an
+`opengraph-image.tsx` re-export unless the route has a bespoke OG image.

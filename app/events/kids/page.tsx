@@ -3,7 +3,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/EventGrid";
 import { Pagination } from "@/components/Pagination";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
-import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import type { Event } from "@/types";
 
 const siteUrl  = canonicalSiteUrl;
@@ -17,11 +17,11 @@ export const metadata: Metadata = {
   description:
     "Family-friendly and kids events in Bergen County, NJ — story times, camps, fairs, performances, outdoor adventures, and more. Great things to do with kids in Bergen County.",
   alternates: { canonical: `${siteUrl}/events/kids` },
-  openGraph: {
+  openGraph: buildOpenGraph({
     url: `${siteUrl}/events/kids`,
     title: "Family & Kids Events in Bergen County, NJ",
     description: "Story times, camps, fairs, performances and outdoor adventures for kids and families in Bergen County.",
-  },
+  }),
 };
 
 export const dynamic = "force-dynamic";
