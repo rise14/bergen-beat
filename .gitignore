@@ -23,7 +23,7 @@ next-env.d.ts
 .DS_Store
 Thumbs.db
 
-# Local Claude notes
+# Local notes
 CLAUDE.md
 AGENTS.md
 DEPLOYMENT.md
@@ -43,6 +43,6 @@ npm-debug.log*
 .beads/
 .agents/skills/beads/
 
-# Claude Code / Codex local config
+# Local agent tooling config
 .claude/
 .codex/
