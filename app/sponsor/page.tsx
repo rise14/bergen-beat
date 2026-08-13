@@ -1,19 +1,20 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { SponsorClient } from "@/components/SponsorClient";
-import { buildOpenGraph, canonicalSiteUrl } from "@/lib/seo";
+import { canonicalSiteUrl, buildOpenGraph } from "@/lib/seo";
 
 const siteUrl = canonicalSiteUrl;
 
 export const metadata: Metadata = {
-  title: "Sponsor an Event",
+  title: "Sponsor Your Event",
   description:
-    "Promote your business to Bergen County locals by sponsoring an event listing on Bergen Beat.",
+    "Promote your Bergen County event to local subscribers — featured placement on Bergen Beat and in the weekly newsletter.",
+  alternates: { canonical: `${siteUrl}/sponsor` },
   openGraph: buildOpenGraph({
     url: `${siteUrl}/sponsor`,
-    title: "Sponsor an Event on Bergen Beat",
+    title: "Sponsor Your Event",
     description:
-      "Promote your business to Bergen County locals by sponsoring an event listing on Bergen Beat.",
+      "Promote your Bergen County event to local subscribers — featured placement on Bergen Beat and in the weekly newsletter.",
   }),
 };
 
