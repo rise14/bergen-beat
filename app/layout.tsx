@@ -4,6 +4,7 @@ import Image from "next/image";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { GoogleTagManager, GoogleTagManagerNoscript } from "@/components/GoogleAnalytics";
+import { Analytics } from "@vercel/analytics/next";
 import { canonicalSiteUrl, buildOrganizationJsonLd } from "@/lib/seo";
 
 const lora = Lora({
@@ -107,6 +108,7 @@ export default function RootLayout({
             </p>
           </div>
         </footer>
+        <Analytics />
       </body>
     </html>
   );
