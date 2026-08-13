@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getNeighborhoodDetails, getNeighborhoods } from "@/lib/neighborhoods";
 import { getPublishedEvents } from "@/lib/events";
 import { canonicalSiteUrl, buildOpenGraph, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
 

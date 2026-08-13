@@ -4,6 +4,7 @@ import { EventGrid } from "@/components/EventGrid";
 import { Pagination } from "@/components/Pagination";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
 import { canonicalSiteUrl, buildOpenGraph, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import type { Event } from "@/types";
 
 const siteUrl  = canonicalSiteUrl;

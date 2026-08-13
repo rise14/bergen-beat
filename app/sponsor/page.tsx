@@ -17,6 +17,7 @@ export const metadata: Metadata = {
       "Promote your Bergen County event to local subscribers — featured placement on Bergen Beat and in the weekly newsletter.",
   }),
 };
+import { SponsorClient } from "@/components/SponsorClient";
 
 interface Props {
   searchParams: { event?: string; cancelled?: string };

@@ -3,6 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getEventBySlug, getEventBySlugAdmin, getRelatedEvents } from "@/lib/events";
 import { canonicalSiteUrl, buildOpenGraph, buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
 import { AddToCalendar } from "@/components/AddToCalendar";

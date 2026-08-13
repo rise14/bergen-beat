@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getNeighborhoods } from "@/lib/neighborhoods";
 import { canonicalSiteUrl, buildOpenGraph, buildItemListJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildItemListJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
 
 const siteUrl = canonicalSiteUrl;
 

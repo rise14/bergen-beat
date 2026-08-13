@@ -3,6 +3,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/EventGrid";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
 import { canonicalSiteUrl, buildOpenGraph, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import type { Event } from "@/types";
 
 const siteUrl = canonicalSiteUrl;
