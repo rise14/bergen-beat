@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { sendSubmissionApproved, sendSubmissionRejected, sendEventAlert } from "@/lib/email";
 import { fireEventWebhook } from "@/lib/webhook";
+import { sanitizeBannerUrl } from "@/lib/bannerImage";
 
 // ─── Slug helper ──────────────────────────────────────────────────────────────
 
@@ -114,7 +115,7 @@ export async function createEvent(formData: FormData) {
       recurrence_note:   formData.get("recurrence_note") as string || null,
       organizer_name:    formData.get("organizer_name") as string || null,
       organizer_email:   formData.get("organizer_email") as string || null,
-      banner_url:          formData.get("banner_url") as string || null,
+      banner_url:          sanitizeBannerUrl(formData.get("banner_url") as string, "admin:createEvent"),
       featured:            formData.get("featured") === "on",
       featured_until:      formData.get("featured_until") as string || null,
       is_sponsored:        formData.get("is_sponsored") === "on",
@@ -173,7 +174,7 @@ export async function updateEvent(id: string, formData: FormData) {
       recurrence_note:   formData.get("recurrence_note") as string || null,
       organizer_name:    formData.get("organizer_name") as string || null,
       organizer_email:   formData.get("organizer_email") as string || null,
-      banner_url:          formData.get("banner_url") as string || null,
+      banner_url:          sanitizeBannerUrl(formData.get("banner_url") as string, "admin:updateEvent"),
       featured:            formData.get("featured") === "on",
       featured_until:      formData.get("featured_until") as string || null,
       is_sponsored:        formData.get("is_sponsored") === "on",
@@ -239,7 +240,7 @@ export async function approveSubmission(formData: FormData) {
     end_date:          sub.end_date,
     organizer_name:    sub.organizer_name,
     organizer_email:   sub.organizer_email,
-    banner_url:        sub.banner_url,
+    banner_url:        sanitizeBannerUrl(sub.banner_url, "admin:approveSubmission"),
     source:            "submission",
     submission_id:     sub.id,
     published_at:      new Date().toISOString(),
@@ -384,7 +385,7 @@ export async function bulkApproveSubmissions(ids: string[]): Promise<{ approved:
         end_date:       sub.end_date,
         organizer_name: sub.organizer_name,
         organizer_email:sub.organizer_email,
-        banner_url:     sub.banner_url,
+        banner_url:     sanitizeBannerUrl(sub.banner_url, "admin:bulkApprove"),
         source:         "submission",
         submission_id:  sub.id,
         published_at:   new Date().toISOString(),
@@ -450,7 +451,7 @@ export async function updateSubmission(formData: FormData) {
       is_free:       formData.get("is_free") === "true",
       price_range:   (formData.get("price_range")    as string) || null,
       external_url:  (formData.get("external_url")   as string) || null,
-      banner_url:    (formData.get("banner_url")     as string) || null,
+      banner_url:    sanitizeBannerUrl(formData.get("banner_url") as string, "admin:updateSubmission"),
       category_id:   (formData.get("category_id")   as string) || null,
       admin_notes:   (formData.get("admin_notes")    as string) || null,
     })
