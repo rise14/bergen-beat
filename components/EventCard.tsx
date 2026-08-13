@@ -1,7 +1,5 @@
-"use client";
-
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Star, MapPin } from "lucide-react";
 import type { Event } from "@/types";
 import { formatShortDate, formatEventTime } from "@/lib/dates";
@@ -14,16 +12,9 @@ interface Props {
 }
 
 export function EventCard({ event, priority = false }: Props) {
-  const router = useRouter();
-
   return (
-    <div
-      role="link"
-      tabIndex={0}
-      onClick={() => router.push(`/events/${event.slug}`)}
-      onKeyDown={(e) => e.key === "Enter" && router.push(`/events/${event.slug}`)}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white transition hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
-    >
+    // `relative` anchors the stretched-link overlay on the title anchor below.
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-cream-200 bg-white transition hover:shadow-md hover:-translate-y-0.5">
       {/* Banner image */}
       <div className="relative h-44 overflow-hidden bg-cream-100">
         {event.banner_url ? (
@@ -77,8 +68,22 @@ export function EventCard({ event, priority = false }: Props) {
         )}
 
         {/* Title — serif font, navy */}
+        {/*
+          The title is the card's real crawlable link. `after:absolute
+          after:inset-0` stretches its hit area over the whole card, so the
+          entire card stays clickable (as it was with the old router.push
+          handler) while search engines and "open in new tab" get a genuine
+          <a href>. Ahrefs Site Audit: "Orphan page (has no incoming internal
+          links)" — every event detail page was orphaned because this card
+          emitted no anchor.
+        */}
         <h3 className="font-serif text-sm font-semibold text-navy-800 line-clamp-2 leading-snug">
-          {event.title}
+          <Link
+            href={`/events/${event.slug}`}
+            className="after:absolute after:inset-0 after:content-[''] hover:underline"
+          >
+            {event.title}
+          </Link>
         </h3>
 
         {/* Date */}
@@ -92,14 +97,15 @@ export function EventCard({ event, priority = false }: Props) {
         {(event.venue?.name ?? event.neighborhood?.name) && (
           <p className="mt-0.5 text-xs text-gray-400">
             {event.venue?.name ? (
-              <a
+              // `relative z-10` lifts this above the title's stretched
+              // overlay so the venue link stays independently clickable.
+              <Link
                 href={`/venues/${(event.venue as { slug?: string }).slug ?? ""}`}
-                className="hover:text-accent-orange hover:underline"
-                onClick={(e) => e.stopPropagation()} // prevent card onClick from firing
+                className="relative z-10 hover:text-accent-orange hover:underline"
               >
                 {event.venue.name}
                 {event.venue.city ? `, ${event.venue.city}` : ""}
-              </a>
+              </Link>
             ) : (
               event.neighborhood?.name
             )}
