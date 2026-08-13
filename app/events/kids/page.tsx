@@ -15,7 +15,7 @@ const KIDS_SLUGS = ["kids", "family", "children", "kids-family", "family-kids", 
 export const metadata: Metadata = {
   title: "Family & Kids Events in Bergen County, NJ",
   description:
-    "Family-friendly and kids events in Bergen County, NJ — story times, camps, fairs, performances, outdoor adventures, and more. Great things to do with kids in Bergen County.",
+    "Family-friendly kids events in Bergen County, NJ — story times, camps, fairs, performances, and outdoor adventures. Great things to do with kids.",
   alternates: { canonical: `${siteUrl}/events/kids` },
   openGraph: buildOpenGraph({
     url: `${siteUrl}/events/kids`,
