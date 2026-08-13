@@ -3,6 +3,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/EventGrid";
 import { Pagination } from "@/components/Pagination";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
+import { canonicalSiteUrl, buildOpenGraph, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import type { Event } from "@/types";
 
@@ -16,11 +17,11 @@ export const metadata: Metadata = {
   description:
     "Find things to do this week in Bergen County, NJ — concerts, festivals, markets, outdoor events, kids activities, and more. Updated daily.",
   alternates: { canonical: `${siteUrl}/events/this-week` },
-  openGraph: {
+  openGraph: buildOpenGraph({
     url: `${siteUrl}/events/this-week`,
     title: "Things To Do This Week in Bergen County, NJ",
     description: "Concerts, festivals, markets, and more happening this week in Bergen County.",
-  },
+  }),
 };
 
 function getWeekRange(): { start: string; end: string; label: string } {

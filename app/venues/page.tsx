@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getActiveVenues } from "@/lib/venues";
+import { canonicalSiteUrl, buildOpenGraph } from "@/lib/seo";
 import { canonicalSiteUrl } from "@/lib/seo";
 
 const siteUrl = canonicalSiteUrl;
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   title: "Event Venues",
   description: "Browse venues hosting upcoming events in Bergen County, NJ.",
   alternates: { canonical: `${siteUrl}/venues` },
-  openGraph: { url: `${siteUrl}/venues` },
+  openGraph: buildOpenGraph({ url: `${siteUrl}/venues` }),
 };
 
 export const revalidate = 3600;

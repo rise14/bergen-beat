@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
 import { getCategories } from "@/lib/categories";
+import { canonicalSiteUrl, buildOpenGraph } from "@/lib/seo";
+
+const siteUrl = canonicalSiteUrl;
 
 export const metadata: Metadata = {
   title: "Browse by Category",
   description: "Find events in Bergen County, NJ by category — music, food, arts, sports, kids, and more.",
+  openGraph: buildOpenGraph({
+    url: `${siteUrl}/categories`,
+    title: "Browse by Category",
+    description: "Find events in Bergen County, NJ by category — music, food, arts, sports, kids, and more.",
+  }),
 };
 
 export const revalidate = 3600;

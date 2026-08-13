@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getEventBySlug, getEventBySlugAdmin, getRelatedEvents } from "@/lib/events";
+import { canonicalSiteUrl, buildOpenGraph, buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
 import { canonicalSiteUrl, buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
@@ -32,14 +33,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: event.title,
     description: event.short_description ?? event.description?.slice(0, 155),
     alternates: { canonical: canonicalUrl },
-    openGraph: {
+    openGraph: buildOpenGraph({
+      url: canonicalUrl,
       title: event.title,
       description: event.short_description ?? undefined,
-      url: canonicalUrl,
+      // No banner → omit `images` so buildOpenGraph falls back to the site
+      // default. Passing [] here previously left the page with no og:image.
       images: event.banner_url
         ? [{ url: event.banner_url, width: 1200, height: 630, alt: event.title }]
-        : [],
-    },
+        : undefined,
+    }),
   };
 }
 

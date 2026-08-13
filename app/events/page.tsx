@@ -8,6 +8,7 @@ import { getPublishedEvents } from "@/lib/events";
 import { getCategories } from "@/lib/categories";
 import { getNeighborhoods } from "@/lib/neighborhoods";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
+import { canonicalSiteUrl, buildOpenGraph } from "@/lib/seo";
 import { canonicalSiteUrl } from "@/lib/seo";
 
 const siteUrl = canonicalSiteUrl;
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
   description:
     "Browse every upcoming event in Bergen County, NJ — concerts, festivals, markets, and family days out. Filter by category, town, date, or free entry.",
   alternates: { canonical: `${siteUrl}/events` },
-  openGraph: { url: `${siteUrl}/events` },
+  openGraph: buildOpenGraph({ url: `${siteUrl}/events` }),
 };
 
 export const dynamic = "force-dynamic";

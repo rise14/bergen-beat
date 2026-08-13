@@ -3,6 +3,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/EventGrid";
 import { Pagination } from "@/components/Pagination";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
+import { canonicalSiteUrl, buildOpenGraph, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import { canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
 import type { Event } from "@/types";
 
@@ -14,12 +15,12 @@ export const metadata: Metadata = {
   description:
     "Discover free things to do in Bergen County, NJ — free concerts, outdoor movies, festivals, farmers markets, family events, and more. Updated daily.",
   alternates: { canonical: `${siteUrl}/events/free` },
-  openGraph: {
+  openGraph: buildOpenGraph({
     url: `${siteUrl}/events/free`,
     title: "Free Events in Bergen County, NJ",
     description:
       "Free concerts, festivals, markets, outdoor movies, and family events happening in Bergen County. No ticket required.",
-  },
+  }),
 };
 
 export const dynamic = "force-dynamic";

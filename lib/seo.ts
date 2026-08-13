@@ -37,6 +37,62 @@ export const canonicalSiteUrl = normalizeSiteUrl(
 
 const siteUrl = canonicalSiteUrl;
 
+// ─── Open Graph ───────────────────────────────────────────────────────────────
+// Next.js App Router REPLACES a parent's `openGraph` object with the child's
+// rather than merging field-by-field. So any route that declared its own
+// `openGraph: { url, title }` silently dropped the `type`, `siteName` and
+// `locale` set in app/layout.tsx — which is how 258 pages ended up flagged by
+// Ahrefs Site Audit as "Open Graph tags incomplete" (missing og:type).
+//
+// The same replacement disables the convention-based default image at
+// app/opengraph-image.tsx, so those routes emitted no og:image either.
+//
+// buildOpenGraph() re-applies the site-wide defaults on every call. Always
+// build a route's `openGraph` through it instead of writing the object inline.
+
+/** Absolute URL of the generated 1200×630 default OG image (app/opengraph-image.tsx). */
+export const defaultOgImageUrl = `${siteUrl}/opengraph-image`;
+
+export const defaultOgImage = {
+  url: defaultOgImageUrl,
+  width: 1200,
+  height: 630,
+  alt: "Bergen Beat — Events in Bergen County, NJ",
+} as const;
+
+export interface OpenGraphInput {
+  /** Absolute canonical URL of the page. Required — og:url must match rel=canonical. */
+  url: string;
+  title?: string;
+  description?: string;
+  /**
+   * Page-specific images. Omit (or pass an empty array) to fall back to the
+   * site default — never leave a page without an og:image.
+   */
+  images?: { url: string; width?: number; height?: number; alt?: string }[];
+  /** Defaults to "website"; event detail pages may pass "article". */
+  type?: "website" | "article";
+}
+
+/**
+ * Build a complete Open Graph object: always emits the four tags Ahrefs
+ * requires (og:title, og:type, og:image, og:url) plus siteName and locale.
+ */
+export function buildOpenGraph(input: OpenGraphInput) {
+  const images =
+    input.images && input.images.length > 0 ? input.images : [defaultOgImage];
+
+  return {
+    type: input.type ?? ("website" as const),
+    siteName: "Bergen Beat",
+    locale: "en_US",
+    url: input.url,
+    ...(input.title ? { title: input.title } : {}),
+    ...(input.description ? { description: input.description } : {}),
+    images,
+  };
+}
+
 // ─── Event JSON-LD ────────────────────────────────────────────────────────────
 // Build a JSON-LD Event schema for Google's event rich results.
 // https://developers.google.com/search/docs/appearance/structured-data/event
