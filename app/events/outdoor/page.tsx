@@ -18,7 +18,7 @@ const OUTDOOR_SLUGS = [
 export const metadata: Metadata = {
   title: "Outdoor Events in Bergen County, NJ",
   description:
-    "Outdoor events in Bergen County, NJ — hikes, nature walks, park festivals, farmers markets, outdoor concerts, and more. Find things to do outside in Bergen County.",
+    "Outdoor events in Bergen County, NJ — hikes, nature walks, park festivals, farmers markets, and outdoor concerts. Find things to do outside.",
   alternates: { canonical: `${siteUrl}/events/outdoor` },
   openGraph: buildOpenGraph({
     url: `${siteUrl}/events/outdoor`,
