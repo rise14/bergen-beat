@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getEventBySlug, getEventBySlugAdmin, getRelatedEvents, isHiddenFromListings } from "@/lib/events";
-import { buildOpenGraph, canonicalSiteUrl, buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
+import {
+  buildOpenGraph,
+  canonicalSiteUrl,
+  buildEventJsonLd,
+  buildBreadcrumbJsonLd,
+  resolveEventDescription,
+} from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
 import { AddToCalendar } from "@/components/AddToCalendar";
@@ -35,15 +41,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // on the page crawlable so equity still flows to the venue/category pages.
   const hidden = isHiddenFromListings(event);
 
+  // Never `undefined`: resolveEventDescription falls back to a composed sentence
+  // when both DB columns are NULL, which is what left 244 pages with no meta
+  // description tag (Ahrefs 57751310-001c-11e8-b746-001e67ed4656).
+  const description = resolveEventDescription(event);
+
   return {
     title: event.title,
-    description: event.short_description ?? event.description?.slice(0, 155),
+    description,
     alternates: { canonical: canonicalUrl },
     ...(hidden ? { robots: { index: false, follow: true } } : {}),
     openGraph: buildOpenGraph({
       type: "article",
       title: event.title,
-      description: event.short_description ?? undefined,
+      description,
       url: canonicalUrl,
       // No banner → omit `images` entirely so Next.js falls back to this
       // segment's opengraph-image.tsx. An empty array would suppress it.

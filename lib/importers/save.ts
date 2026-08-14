@@ -13,6 +13,7 @@
 
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { sanitizeBannerUrl } from "@/lib/bannerImage";
+import { buildEventDescription } from "@/lib/seo";
 import type { ImportedEvent } from "@/types";
 
 export interface SaveResult {
@@ -288,7 +289,22 @@ export async function saveImportedEvents(
         .insert({
           title: event.title,
           slug,
-          short_description: event.short_description,
+          // Upstream feeds often carry no blurb at all (Ticketmaster omits
+          // `info` for most Broadway/touring listings), which used to store NULL
+          // here and left the event page with no meta description tag — the root
+          // cause of Ahrefs issue 57751310-001c-11e8-b746-001e67ed4656. Backfill
+          // a composed sentence at write time so the column is never NULL and
+          // the newsletter templates (lib/email.ts renders short_description)
+          // have copy too. Real feed content always takes precedence.
+          short_description:
+            event.short_description?.trim() ||
+            buildEventDescription({
+              title: event.title,
+              start_date: event.start_date,
+              is_free: event.is_free,
+              price_range: event.price_range,
+              venue: event.venue,
+            }),
           description: event.description,
           start_date: event.start_date,
           end_date: event.end_date,
