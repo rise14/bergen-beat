@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getVenueBySlug, getVenueEvents, getActiveVenueSlugs } from "@/lib/venues";
-import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd, buildVenueDescription } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
 
@@ -23,7 +23,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!venue) return {};
 
   const title = venue.city ? `${venue.name}, ${venue.city}` : venue.name;
-  const description = `Upcoming events at ${venue.name}${venue.city ? ` in ${venue.city}` : ""}, Bergen County, NJ.`;
+  // Was a single 52–83 char sentence — structurally too short to clear Ahrefs'
+  // 110-char floor on any venue ("Meta description too short",
+  // c64d5156-d0f4-11e7-8ed1-001e67ed4656). buildVenueDescription composes the
+  // same facts plus the live event count and what the page offers.
+  const description = buildVenueDescription(venue);
   const canonicalUrl = `${siteUrl}/venues/${venue.slug}`;
 
   // /venues lists only venues with upcoming events (lib/venues.ts →

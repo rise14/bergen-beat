@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCategoryBySlug, getCategories } from "@/lib/categories";
 import { getPublishedEvents } from "@/lib/events";
-import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd, buildCategoryDescription } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 
 export const revalidate = 3600;
@@ -22,13 +22,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const category = await getCategoryBySlug(params.slug);
   if (!category) return {};
   const canonicalUrl = `${siteUrl}/categories/${params.slug}`;
+  const title = `${category.name} Events in Bergen County, NJ`;
+  // Was a single 58–89 char sentence — under Ahrefs' 110-char floor for every
+  // category name ("Meta description too short",
+  // c64d5156-d0f4-11e7-8ed1-001e67ed4656).
+  const description = buildCategoryDescription(category.name);
   return {
-    title: `${category.name} Events in Bergen County, NJ`,
-    description: `Find the best ${category.name.toLowerCase()} events happening in Bergen County, NJ.`,
+    title,
+    description,
     alternates: { canonical: canonicalUrl },
     openGraph: buildOpenGraph({
-      title: `${category.name} Events in Bergen County, NJ`,
-      description: `Find the best ${category.name.toLowerCase()} events happening in Bergen County, NJ.`,
+      title,
+      description,
       url: canonicalUrl,
     }),
   };
