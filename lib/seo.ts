@@ -192,6 +192,35 @@ export function buildEventDescription(
   return `${trimmed}…${dateClause}.`;
 }
 
+// Trim feed copy to the ceiling at a word boundary.
+//
+// Ahrefs "Meta description too long" (c64d56c9-d0f4-11e7-8ed1-001e67ed4656)
+// flagged 8 /events/ pages at 196–200 characters. Cause: every importer stores
+// its blurb with `.slice(0, 200)` (lib/importers/{ticketmaster,predicthq,ical,
+// rss}.ts) and resolveEventDescription's short_description branch passed that
+// straight through — a 161–200 char blurb cleared padToMinimum's 110 floor
+// untouched and went out as-is. The `description` branch was already clamped,
+// so this was an asymmetry between the two, not missing copy.
+//
+// Don't "fix" this in the importers: short_description is also rendered by the
+// newsletter templates (lib/email.ts), where 200 characters is fine. The meta
+// tag is what has a 160 ceiling, so the clamp belongs here.
+//
+// A hard slice would emit a new mid-word cut (the 200-char slice is exactly why
+// the flagged tags read "…Marcell Ja"), so back up to the last word boundary and
+// mark the elision. Already-short text is returned untouched — this never pads,
+// never rewords, and never invents.
+function clampToMax(text: string): string {
+  if (text.length <= DESCRIPTION_MAX) return text;
+
+  const clipped = text.slice(0, DESCRIPTION_MAX - 1); // room for the ellipsis
+  const lastSpace = clipped.lastIndexOf(" ");
+  const cut = lastSpace > 0 ? clipped.slice(0, lastSpace) : clipped;
+
+  // Strip trailing punctuation so we don't produce ",…" / ".…".
+  return `${cut.replace(/[\s,;:.!?-]+$/, "")}\u2026`;
+}
+
 // Resolve the description for an event, honouring existing content first.
 // Shared by the page metadata, the Event JSON-LD and the importers so all three
 // surfaces agree on one value.
@@ -202,10 +231,10 @@ export function resolveEventDescription(
   }
 ): string {
   const short = event.short_description?.trim();
-  if (short) return padToMinimum(short, event);
+  if (short) return padToMinimum(clampToMax(short), event);
 
   const long = event.description?.trim();
-  if (long) return padToMinimum(long.slice(0, DESCRIPTION_MAX), event);
+  if (long) return padToMinimum(clampToMax(long), event);
 
   return buildEventDescription(event);
 }
@@ -549,6 +578,50 @@ export function buildCategoryDescription(categoryName: string): string {
     `${lead} ${browse}, with tickets on Bergen Beat.`,
     `${lead} ${browse}.`,
     `${lead} Browse dates, venues and tickets on Bergen Beat.`,
+  ]);
+}
+
+// The /towns/<slug> listing generator.
+//
+// Ahrefs "Meta description too long" flagged /towns/other at 164 characters.
+// The inline template in app/towns/[slug]/page.tsx named the town TWICE:
+//
+//   `Find things to do in ${town}, NJ — upcoming concerts, festivals, family
+//    events, outdoor activities, and more. ${n} events coming up in ${town}.`
+//
+// "Teaneck" lands at 141, but "Other Bergen County" hits 164 — so every town
+// name of ~16+ characters overflows. PR #17 gave /venues and /categories the
+// firstFitting() ladder; towns was the one listing generator left unguarded.
+//
+// The first clause shed is the trailing town repeat (the redundant one), then
+// the "outdoor activities" clause. Same real-values-only rule as the others: the
+// count is the live upcomingCount, and it's dropped rather than shown as 0.
+export interface TownDescriptionInput {
+  name: string;
+  /** Upcoming published events; pluralised, and omitted entirely when 0. */
+  upcomingCount?: number;
+}
+
+export function buildTownDescription(town: TownDescriptionInput): string {
+  const name = town.name.trim();
+  const count = town.upcomingCount ?? 0;
+  const plural = count === 1 ? "event" : "events";
+
+  const lead = `Find things to do in ${name}, NJ`;
+  const listing = `${lead} — upcoming concerts, festivals, family events, outdoor activities, and more.`;
+
+  // The tail is what keeps a short town name above the 110 floor. With events on
+  // the calendar the count does that job; at 0 we must not print "0 events", so
+  // a browse clause carries the length instead ("Maywood" + no tail is only 109).
+  const tails = count > 0
+    ? [` ${count} ${plural} coming up in ${name}.`, ` ${count} ${plural} coming up.`]
+    : [" Browse this week's events by date, venue and category on Bergen Beat.", " Browse events by date and venue on Bergen Beat."];
+
+  return firstFitting([
+    `${listing}${tails[0]}`,
+    `${listing}${tails[1]}`,
+    `${lead} — upcoming concerts, festivals, family events, and more.${tails[1]}`,
+    `${lead} — upcoming concerts, festivals and family events, plus tickets and directions on Bergen Beat.`,
   ]);
 }
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getNeighborhoodDetails, getNeighborhoods } from "@/lib/neighborhoods";
 import { getPublishedEvents } from "@/lib/events";
-import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd, buildTownDescription } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { NewsletterSubscribeBar } from "@/components/NewsletterSubscribeBar";
 
@@ -28,7 +28,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `Things to Do in ${townName}, NJ — Local Events`,
-    description: `Find things to do in ${townName}, NJ — upcoming concerts, festivals, family events, outdoor activities, and more. ${nb.upcomingCount} events coming up in ${townName}.`,
+    // Clause-shedding generator — the inline string this replaced overflowed 160
+    // for any town name of ~16+ chars ("Other Bergen County" hit 164). See
+    // buildTownDescription in lib/seo.ts.
+    description: buildTownDescription({ name: townName, upcomingCount: nb.upcomingCount }),
     alternates: { canonical: canonicalUrl },
     openGraph: buildOpenGraph({
       title: `Things to Do in ${townName}, NJ`,
