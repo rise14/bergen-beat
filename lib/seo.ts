@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { Event } from "@/types";
+import { formatEventDate } from "@/lib/dates";
 
 // ─── Canonical site URL ───────────────────────────────────────────────────────
 // The canonical host is `www.bergenbeat.net`. next.config.js redirects the bare
@@ -89,6 +90,115 @@ export function buildOpenGraph(input: OpenGraphInput): Metadata["openGraph"] {
   };
 }
 
+// ─── Event meta description fallback ──────────────────────────────────────────
+// Ahrefs Site Audit ("Meta description tag missing or empty", issue
+// 57751310-001c-11e8-b746-001e67ed4656) flagged 244 /events/<slug> pages with no
+// description tag at all — 31 indexable + 213 noindex past events.
+//
+// Root cause was NOT a content backlog. Event detail metadata read
+//   description: event.short_description ?? event.description?.slice(0, 155)
+// and BOTH columns are NULL for a whole class of imports: the upstream feeds only
+// sometimes carry a blurb (e.g. lib/importers/ticketmaster.ts takes `tm.info`,
+// which Ticketmaster omits for most Broadway/touring listings). When both are
+// NULL the expression is `undefined` and Next.js emits no tag. Because the
+// importers run on cron, hand-writing descriptions would be re-broken the next
+// day — the fix has to be a deterministic fallback, not per-page copy.
+//
+// This composes a description from structured columns that are always present
+// (title, start_date) plus whatever else we have (venue, city, price). It never
+// invents facts: every clause is a real field, and a field we don't have is
+// simply omitted. Ordering keeps the distinguishing bits (title, venue, date)
+// first so the ~155-char clamp trims only the boilerplate tail.
+//
+// Precedence is unchanged: a human-written short_description still wins. This is
+// only the last resort, replacing `undefined`.
+
+const DESCRIPTION_MAX = 155;
+const DESCRIPTION_BOILERPLATE =
+  "Find event details, times, and directions on Bergen Beat.";
+
+export interface EventDescriptionInput {
+  title: string;
+  start_date: string;
+  is_free?: boolean;
+  price_range?: string | null;
+  venue?: { name: string; city?: string | null } | null;
+}
+
+export function buildEventDescription(event: EventDescriptionInput): string {
+  const title = event.title.trim();
+  const venueName = event.venue?.name?.trim() || null;
+  const city = event.venue?.city?.trim() || null;
+
+  // "Wicked at Gershwin Theatre in New York". Each clause is skipped when the
+  // text already contains it, so feed titles that embed their own venue or town
+  // don't stutter — e.g. "Summer Friday Guided Tours at the Hermitage in
+  // Ho-Ho-Kus" keeps its own phrasing instead of gaining a second "at the
+  // Hermitage in Ho-Ho-Kus", and "Teaneck Farmers Market" (venue row also named
+  // "Teaneck") stays as-is.
+  let lead = title;
+  if (venueName && !title.toLowerCase().includes(venueName.toLowerCase())) {
+    lead += ` at ${venueName}`;
+  }
+  if (city && !lead.toLowerCase().includes(city.toLowerCase())) {
+    lead += ` in ${city}`;
+  }
+
+  // formatEventDate renders in America/New_York, so the date matches what the
+  // page body shows. An unparseable start_date would yield "Invalid Date"; skip
+  // the clause entirely rather than emit that.
+  const formattedDate = Number.isNaN(new Date(event.start_date).getTime())
+    ? null
+    : formatEventDate(event.start_date);
+  const dateClause = formattedDate ? ` on ${formattedDate}` : "";
+
+  const priceClause = event.is_free
+    ? "Free admission."
+    : event.price_range
+      ? `Tickets ${event.price_range}.`
+      : null;
+
+  const assemble = (withPrice: boolean, withBoilerplate: boolean): string =>
+    [
+      `${lead}${dateClause}.`,
+      ...(withPrice && priceClause ? [priceClause] : []),
+      ...(withBoilerplate ? [DESCRIPTION_BOILERPLATE] : []),
+    ].join(" ");
+
+  // Shed the least valuable clauses first (boilerplate, then price) so a long
+  // title never costs us the date. Naively clamping the whole string used to cut
+  // mid-date ("… on Friday…"), losing the one detail that makes each of these
+  // descriptions unique.
+  for (const candidate of [assemble(true, true), assemble(true, false), assemble(false, false)]) {
+    if (candidate.length <= DESCRIPTION_MAX) return candidate;
+  }
+
+  // Title alone still overflows — trim it at a word boundary, keeping the date.
+  const budget = DESCRIPTION_MAX - dateClause.length - 2; // "…" + "."
+  const clipped = lead.slice(0, Math.max(0, budget));
+  const lastSpace = clipped.lastIndexOf(" ");
+  const trimmed = (lastSpace > 0 ? clipped.slice(0, lastSpace) : clipped).replace(/[,.]$/, "");
+  return `${trimmed}…${dateClause}.`;
+}
+
+// Resolve the description for an event, honouring existing content first.
+// Shared by the page metadata, the Event JSON-LD and the importers so all three
+// surfaces agree on one value.
+export function resolveEventDescription(
+  event: EventDescriptionInput & {
+    short_description?: string | null;
+    description?: string | null;
+  }
+): string {
+  const short = event.short_description?.trim();
+  if (short) return short;
+
+  const long = event.description?.trim();
+  if (long) return long.slice(0, DESCRIPTION_MAX);
+
+  return buildEventDescription(event);
+}
+
 // ─── Event JSON-LD ────────────────────────────────────────────────────────────
 // Build a JSON-LD Event schema for Google's event rich results.
 // https://developers.google.com/search/docs/appearance/structured-data/event
@@ -108,9 +218,11 @@ export function buildEventJsonLd(event: Event): Record<string, unknown> {
     jsonLd.endDate = event.end_date;
   }
 
-  if (event.description) {
-    jsonLd.description = event.description;
-  }
+  // Was `if (event.description)` — left the field off entirely on events with no
+  // blurb (Google's Event rich-result guidance asks for a description, and the
+  // same NULL columns that broke the meta tag broke this too). resolveEventDescription
+  // prefers real content and falls back to the composed sentence.
+  jsonLd.description = resolveEventDescription(event);
 
   if (event.banner_url) {
     jsonLd.image = event.banner_url;
