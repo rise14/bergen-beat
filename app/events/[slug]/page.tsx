@@ -8,6 +8,7 @@ import {
   buildEventJsonLd,
   buildBreadcrumbJsonLd,
   resolveEventDescription,
+  buildEventTitle,
 } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
@@ -46,8 +47,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // description tag (Ahrefs 57751310-001c-11e8-b746-001e67ed4656).
   const description = resolveEventDescription(event);
 
+  // Feed titles embed the venue + town this page already states in its H1 and
+  // breadcrumb, which pushed 5 indexable pages past Ahrefs' 70-char title
+  // ceiling ("Title too long", c64dac3a-d0f4-11e7-8ed1-001e67ed4656) once
+  // layout.tsx's " | Bergen Beat" suffix landed. buildEventTitle sheds those
+  // trailing clauses before trimming. `event.title` is still used verbatim
+  // below for the H1, OG title and JSON-LD.
+  const metaTitle = buildEventTitle(event);
+
   return {
-    title: event.title,
+    title: metaTitle,
     description,
     alternates: { canonical: canonicalUrl },
     ...(hidden ? { robots: { index: false, follow: true } } : {}),

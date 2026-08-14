@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/EventGrid";
-import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildItemListJsonLd, buildWeekendTitle } from "@/lib/seo";
 import type { Event } from "@/types";
 
 const siteUrl = canonicalSiteUrl;
@@ -36,7 +36,14 @@ export const revalidate = 3600; // refresh hourly
 export function generateMetadata(): Metadata {
   const { label } = getWeekendRange();
   return {
-    title: `This Weekend in Bergen County — ${label}`,
+    // The date range used to be spelled out here in full ("Fri, August 14 – Sun,
+    // August 16"), which made the finished tag 69–83 chars depending on the
+    // calendar — so this page drifted in and out of Ahrefs "Title too long"
+    // (c64dac3a-d0f4-11e7-8ed1-001e67ed4656) week to week, and was flagged at
+    // 77. The dates aren't a search term anyone types, so the title now carries
+    // the evergreen phrasing at a fixed 62 chars and the live range stays in the
+    // H1, the OG title below and the visible page copy.
+    title: buildWeekendTitle(),
     description:
       "Things to do this weekend in Bergen County, NJ. Concerts, markets, festivals, family events, and more — updated every week.",
     alternates: { canonical: `${siteUrl}/this-weekend` },
