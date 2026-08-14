@@ -306,8 +306,27 @@ function padToMinimum(existing: string, event: EventDescriptionInput): string {
   if (!suffix) return existing;
 
   const combined = `${existing}${separator}${suffix}`;
+  if (combined.length > DESCRIPTION_MAX) return existing;
 
-  return combined.length <= DESCRIPTION_MAX ? combined : existing;
+  // Clearing the floor can take a THIRD clause.
+  //
+  // `/events/zedd-in-the-park-nyc-2-day-ticket-…` survived the fix above at 93
+  // chars: 48 chars of feed fine-print + the dateSuffix fallback still lands 17
+  // under the floor, because the ellipsis guard above swapped the full composed
+  // sentence for the shorter date-and-venue one. Appending the boilerplate is the
+  // only clause left that adds length without inventing a fact — so try it,
+  // longest rung first, and keep whichever fits the ceiling.
+  if (combined.length < DESCRIPTION_MIN) {
+    for (const boilerplate of [
+      DESCRIPTION_BOILERPLATE,
+      DESCRIPTION_BOILERPLATE_COMPACT,
+    ]) {
+      const padded = `${combined} ${boilerplate}`;
+      if (padded.length <= DESCRIPTION_MAX) return padded;
+    }
+  }
+
+  return combined;
 }
 
 /** "Friday, August 14, 2026 at Lena Horne Theatre." — or null if unparseable. */
