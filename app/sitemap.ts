@@ -2,13 +2,23 @@ import { MetadataRoute } from "next";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { canonicalSiteUrl } from "@/lib/seo";
 import { getActiveVenueSlugs } from "@/lib/venues";
+import { isHiddenFromListings } from "@/lib/events";
 
 // Always emit the canonical www host — apex URLs redirect, and a sitemap must
 // only list non-redirecting URLs.
 const siteUrl = canonicalSiteUrl;
 
-// Regenerate at most once per hour
-export const revalidate = 3600;
+// Regenerate at most once every 5 minutes.
+//
+// This is NOT arbitrary: app/events/[slug]/page.tsx is a separate ISR cache
+// entry with its own independent expiry clock, and the `start_date < now`
+// boundary is evaluated at render time, not request time. At revalidate=3600
+// the two bodies could disagree for up to an hour — the sitemap still listing
+// an event whose detail page had already flipped to `noindex`, which Ahrefs
+// Site Audit flagged as "Noindex page in sitemap" (Critical,
+// c64d53a0-d0f4-11e7-8ed1-001e67ed4656). Shorter window = smaller disagreement.
+// The query below is ~128 rows, so regenerating more often is cheap.
+export const revalidate = 300;
 
 // A sitemap must list the pages we want indexed — which is the set of pages the
 // site actually links to.
@@ -38,7 +48,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ] = await Promise.all([
     supabase
       .from("events")
-      .select("slug, updated_at")
+      // `start_date` is selected so the render-time filter below can reuse
+      // isHiddenFromListings — the same function the detail page keys `noindex` off.
+      .select("slug, updated_at, start_date")
       .eq("status", "published")
       // Same predicate the listings use, so the sitemap can't drift from what
       // the site links to.
@@ -80,12 +92,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const eventUrls: MetadataRoute.Sitemap =
-    (events ?? []).map((e) => ({
-      url: `${siteUrl}/events/${e.slug}`,
-      lastModified: e.updated_at ? new Date(e.updated_at) : today,
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    }));
+    (events ?? [])
+      // Belt-and-braces: the .gte() above bounds the query at fetch time, but a
+      // cached sitemap body outlives that instant. Re-checking through the shared
+      // predicate means an event that expired since the fetch can never be
+      // advertised as indexable, however stale this cache entry is.
+      .filter((e) => !isHiddenFromListings(e))
+      .map((e) => ({
+        url: `${siteUrl}/events/${e.slug}`,
+        lastModified: e.updated_at ? new Date(e.updated_at) : today,
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      }));
 
   const categoryUrls: MetadataRoute.Sitemap =
     (categories ?? []).map((c) => ({
