@@ -111,3 +111,76 @@ would require inventing facts. Best-effort with real columns only.
 - **`/venues/united-states`** has a data-quality bug (a country value in the venue-name slot,
   producing "Upcoming events at United States"). The template fix makes it long enough but
   it's still nonsense copy — that's a `venues` row to clean up, not a code change.
+
+---
+
+## Recurrence: 16 `/events/` pages, crawl 2026-08-14 03:50 UTC
+
+Ahrefs re-flagged the same issue name after the fix above shipped — 13 pages on the
+non-indexable variant (`8d785026-001c-11e8-aa34-001e67ed4656`, Notice) and 3 on the
+indexable one (`c64d5156-…`, Warning). **Different root cause, same symptom.** The venue
+and category generators were fine; this was the `/events/` template.
+
+Verified live before changing code (`curl | grep '<meta name="description"'`) — real, not a
+stale crawl. All 16 sat at **98-99 characters**, i.e. 11 under the 110 floor.
+
+### Root cause: the ladder knew the ceiling but not the floor
+
+`buildEventDescription`'s clause-shedding ladder had only three rungs and returned the
+**first candidate under `DESCRIPTION_MAX`**. For a typical Broadway listing:
+
+| Rung | Length | Outcome |
+|---|---|---|
+| lead + date + price + full boilerplate | **156-157** | rejected, 1-2 over the 155 ceiling |
+| lead + date + price | **98-99** | accepted — **11 under the 110 floor** |
+
+There was no rung between 157 and 98. A one-to-two character overflow cost the entire
+57-char boilerplate clause and dropped the description off a cliff. The `DESCRIPTION_MIN`
+constant existed but only `padToMinimum` consulted it, and `padToMinimum` never ran on
+these pages (see below), so nothing caught the result.
+
+**Fix**: a fourth rung — `DESCRIPTION_BOILERPLATE_COMPACT` ("Event details and directions on
+Bergen Beat.", 44 chars, 13 shorter). Narrow overflows now degrade to ~143 instead of 98.
+No new facts, no filler: the compact string is the same claim in fewer words.
+
+### Why `padToMinimum` didn't save these pages
+
+Easy to assume the floor guard was already covering this. It wasn't — it only runs on the
+`short_description` / `description` branches of `resolveEventDescription`. These 16 rows
+have **NULL in both columns**, so they hit the third branch, which returns
+`buildEventDescription(event)` raw. `save.ts` backfills `short_description` at *import*
+time, so rows imported before PR #16 were never backfilled and still land there.
+
+Two consequences worth remembering:
+
+- The composed fallback branch has no post-hoc floor guard by design — the composed sentence
+  *is* the description, so there's nothing to extend. Its length depends entirely on the
+  ladder, which is why the fix belongs in the ladder.
+- A backfill of pre-#16 rows would move these pages onto the `short_description` branch. The
+  ladder fix makes them compliant either way, so a backfill is optional, not required.
+
+### Verification
+
+- All 16 flagged URLs reconstructed from the crawl → **110-160, no exceptions** (143-144).
+- Swept 864 combinations (12 titles × 9 venue/city shapes × 4 dates × free/paid): **0 under
+  110, 0 over 155**.
+- Prior-fix regressions all still pass: the two fine-print feed cases (140 / 124), a 200-char
+  blurb still clamped to 155, long titles keep their date, `Invalid Date` never emitted, the
+  venue/city stutter guard intact, and the importer's `maxLength` budget still respected.
+- `tsc --noEmit` could NOT be run (no network for `npm install` in this environment). The only
+  signature change is the private `assemble(withPrice, boilerplate: string | null)` helper,
+  with all four call sites updated in the same edit. **Run `npm run typecheck` in CI.**
+
+### Known residual (deliberate)
+
+Descriptions still land under 110 when an event has **no venue** AND a very short title
+(`"Gala"` → 90 chars). No such row is in the flagged set. Clearing it would require inventing
+facts, so it stays best-effort — same stance as the synthetic edge cases above.
+
+### Do not
+
+- **Don't lower `DESCRIPTION_MIN` or raise `DESCRIPTION_MAX`** to make the ranges meet. The
+  ladder is the fix; the thresholds are Ahrefs' and Google's.
+- **Don't pad with filler adjectives** to clear the floor. Every clause is a real column.
+- **Don't add a rung by trimming the date or venue** — those are the only things making these
+  near-identical Broadway listings distinct from each other.
