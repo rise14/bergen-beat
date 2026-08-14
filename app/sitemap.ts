@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { canonicalSiteUrl } from "@/lib/seo";
+import { getActiveVenueSlugs } from "@/lib/venues";
 
 // Always emit the canonical www host — apex URLs redirect, and a sitemap must
 // only list non-redirecting URLs.
@@ -9,46 +10,53 @@ const siteUrl = canonicalSiteUrl;
 // Regenerate at most once per hour
 export const revalidate = 3600;
 
-// Events stay published (and therefore indexable) until the nightly expiry cron
-// archives them 7 days after their effective end date — see
-// app/api/cron/expire/route.ts. The sitemap must use the SAME retention window,
-// otherwise every event in that 7-day tail is a live, internally linked,
-// indexable page missing from the sitemap.
-const RETENTION_DAYS = 7;
-
+// A sitemap must list the pages we want indexed — which is the set of pages the
+// site actually links to.
+//
+// This used to mirror the expiry cron's 7-day retention window, on the reasoning
+// that an event in that tail is "a live, internally linked, indexable page". The
+// premise was wrong: events are NOT internally linked in that tail. Every public
+// listing query filters `.gte("start_date", now)` (see lib/events.ts →
+// isHiddenFromListings), so a past event drops out of every grid and related-
+// events block immediately, while staying published for 7 more days. Listing all
+// of them here advertised 431 link-unreachable URLs, which Ahrefs Site Audit
+// flagged as "Orphan page (has no incoming internal links)" (Critical).
+//
+// So the sitemap window now matches the LISTING window, not the retention
+// window: only events still visible somewhere on the site. Past events remain
+// reachable by direct link for the 7-day tail — they're just no longer
+// advertised for indexing, and app/events/[slug]/page.tsx marks them noindex.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createAdminSupabaseClient();
-  const retentionCutoff = new Date(
-    Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000
-  ).toISOString();
+  const listingCutoff = new Date().toISOString();
 
   const [
     { data: events },
     { data: categories },
     { data: neighborhoods },
-    { data: venues },
+    venues,
   ] = await Promise.all([
     supabase
       .from("events")
       .select("slug, updated_at")
       .eq("status", "published")
-      // Mirror the expiry cron's "effective end date" rule: use end_date when
-      // present, otherwise fall back to start_date.
-      // Values are double-quoted: an ISO timestamp is otherwise ambiguous
-      // inside PostgREST's comma/paren-delimited filter grammar.
-      .or(
-        `end_date.gte."${retentionCutoff}",` +
-          `and(end_date.is.null,start_date.gte."${retentionCutoff}")`
-      )
+      // Same predicate the listings use, so the sitemap can't drift from what
+      // the site links to.
+      .gte("start_date", listingCutoff)
       .order("start_date", { ascending: true })
       .limit(5000),
     supabase.from("categories").select("slug"),
     supabase.from("neighborhoods").select("slug"),
+    // Venues, restricted to those with upcoming events — the same set /venues
+    // links to (lib/venues.ts → getActiveVenues filters upcomingCount > 0).
+    // Selecting every venue row advertised 265 URLs that nothing links to and
+    // that render an empty "No upcoming events at this venue" state.
+    //
     // NOTE: `venues` has no `updated_at` column (only `events` does), so
     // selecting it made PostgREST reject the whole query and silently return
     // null — dropping all 84 venue URLs from the sitemap. Select only columns
     // that exist.
-    supabase.from("venues").select("slug").limit(2000),
+    getActiveVenueSlugs(),
   ]);
 
   const today = new Date();
@@ -105,8 +113,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
   const venueUrls: MetadataRoute.Sitemap =
-    (venues ?? []).map((v) => ({
-      url: `${siteUrl}/venues/${v.slug}`,
+    (venues ?? []).map((slug) => ({
+      url: `${siteUrl}/venues/${slug}`,
       changeFrequency: "weekly" as const,
       priority: 0.6,
       // No per-venue timestamp available (see the select above).

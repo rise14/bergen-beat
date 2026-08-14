@@ -26,10 +26,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = `Upcoming events at ${venue.name}${venue.city ? ` in ${venue.city}` : ""}, Bergen County, NJ.`;
   const canonicalUrl = `${siteUrl}/venues/${venue.slug}`;
 
+  // /venues lists only venues with upcoming events (lib/venues.ts →
+  // getActiveVenues filters upcomingCount > 0), so a venue with none is linked
+  // from nowhere on the site and renders an empty "No upcoming events" state.
+  // Serving those as indexable made 265 of them orphan pages in Ahrefs Site
+  // Audit. noindex them until they have an event again — this flips back
+  // automatically on the next revalidate once one is scheduled.
+  const hidden = venue.upcomingCount === 0;
+
   return {
     title,
     description,
     alternates: { canonical: canonicalUrl },
+    ...(hidden ? { robots: { index: false, follow: true } } : {}),
     openGraph: buildOpenGraph({ url: canonicalUrl, title, description }),
   };
 }
