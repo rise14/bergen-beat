@@ -6,7 +6,11 @@ const siteUrl = canonicalSiteUrl;
 
 export const metadata: Metadata = {
   title: "Event Venues",
-  description: "Browse venues hosting upcoming events in Bergen County, NJ.",
+  // 59 chars — under Ahrefs' 110-char floor ("Meta description too short",
+  // c64d5156-d0f4-11e7-8ed1-001e67ed4656). This hub is one of the two
+  // highest-authority pages in the affected set.
+  description:
+    "Browse every venue hosting upcoming events in Bergen County, NJ \u2014 theaters, parks, bars and stadiums, with dates and tickets on Bergen Beat.",
   alternates: { canonical: `${siteUrl}/venues` },
   openGraph: buildOpenGraph({ url: `${siteUrl}/venues` }),
 };

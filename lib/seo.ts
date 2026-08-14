@@ -114,6 +114,10 @@ export function buildOpenGraph(input: OpenGraphInput): Metadata["openGraph"] {
 // only the last resort, replacing `undefined`.
 
 const DESCRIPTION_MAX = 155;
+// Ahrefs ("Meta description too short", c64d5156-d0f4-11e7-8ed1-001e67ed4656)
+// warns below 110 characters. PR #16 guaranteed a description EXISTS; this floor
+// guarantees it's long enough to be usable as a search snippet.
+const DESCRIPTION_MIN = 110;
 const DESCRIPTION_BOILERPLATE =
   "Find event details, times, and directions on Bergen Beat.";
 
@@ -125,7 +129,14 @@ export interface EventDescriptionInput {
   venue?: { name: string; city?: string | null } | null;
 }
 
-export function buildEventDescription(event: EventDescriptionInput): string {
+export function buildEventDescription(
+  event: EventDescriptionInput,
+  /**
+   * Character ceiling for the composed sentence. Defaults to the full budget;
+   * padToMinimum passes the room left over after existing feed copy.
+   */
+  maxLength: number = DESCRIPTION_MAX
+): string {
   const title = event.title.trim();
   const venueName = event.venue?.name?.trim() || null;
   const city = event.venue?.city?.trim() || null;
@@ -170,11 +181,11 @@ export function buildEventDescription(event: EventDescriptionInput): string {
   // mid-date ("… on Friday…"), losing the one detail that makes each of these
   // descriptions unique.
   for (const candidate of [assemble(true, true), assemble(true, false), assemble(false, false)]) {
-    if (candidate.length <= DESCRIPTION_MAX) return candidate;
+    if (candidate.length <= maxLength) return candidate;
   }
 
   // Title alone still overflows — trim it at a word boundary, keeping the date.
-  const budget = DESCRIPTION_MAX - dateClause.length - 2; // "…" + "."
+  const budget = maxLength - dateClause.length - 2; // "…" + "."
   const clipped = lead.slice(0, Math.max(0, budget));
   const lastSpace = clipped.lastIndexOf(" ");
   const trimmed = (lastSpace > 0 ? clipped.slice(0, lastSpace) : clipped).replace(/[,.]$/, "");
@@ -191,12 +202,59 @@ export function resolveEventDescription(
   }
 ): string {
   const short = event.short_description?.trim();
-  if (short) return short;
+  if (short) return padToMinimum(short, event);
 
   const long = event.description?.trim();
-  if (long) return long.slice(0, DESCRIPTION_MAX);
+  if (long) return padToMinimum(long.slice(0, DESCRIPTION_MAX), event);
 
   return buildEventDescription(event);
+}
+
+// Real feed content still wins — but some feeds put promoter fine-print in the
+// blurb field rather than a summary ("RAIN OR SHINE EVENT - ALL ACTS SUBJECT TO
+// CHANGE", 48 chars; "Tickets purchased in the Mezzanine VIP sections get access
+// to the VIP Lounge.", 77 chars). Those are genuine values, so we don't discard
+// them — but alone they're under the 110-char floor AND they don't say what the
+// event is, so they make a poor snippet.
+//
+// Suffix the composed factual sentence (title / venue / date / price — all real
+// columns, never invented) until we clear the floor. Existing text is preserved
+// verbatim at the front; if the combination would exceed DESCRIPTION_MAX we
+// return the original untouched rather than emit a mid-word truncation.
+function padToMinimum(existing: string, event: EventDescriptionInput): string {
+  if (existing.length >= DESCRIPTION_MIN) return existing;
+
+  const separator = /[.!?]$/.test(existing) ? " " : ". ";
+  // Compose into the space that's actually left, so the suffix sheds its own
+  // optional clauses instead of us discarding the whole thing for overflowing.
+  const room = DESCRIPTION_MAX - existing.length - separator.length;
+  if (room <= 0) return existing;
+
+  const composed = buildEventDescription(event, room);
+
+  // buildEventDescription's last resort ellipsis-trims the title, which reads
+  // badly mid-clause ("at Lena Horne Theatre in… on Friday"). As a suffix we'd
+  // rather drop back to the date alone — still a real fact, and it's the detail
+  // that makes each of these unique.
+  const suffix = composed.includes("\u2026")
+    ? dateSuffix(event)
+    : composed;
+  if (!suffix) return existing;
+
+  const combined = `${existing}${separator}${suffix}`;
+
+  return combined.length <= DESCRIPTION_MAX ? combined : existing;
+}
+
+/** "Friday, August 14, 2026 at Lena Horne Theatre." — or null if unparseable. */
+function dateSuffix(event: EventDescriptionInput): string | null {
+  if (Number.isNaN(new Date(event.start_date).getTime())) return null;
+
+  const formatted = formatEventDate(event.start_date);
+  const venueName = event.venue?.name?.trim();
+
+  const withVenue = venueName ? `${formatted} at ${venueName}.` : `${formatted}.`;
+  return withVenue;
 }
 
 // ─── Event JSON-LD ────────────────────────────────────────────────────────────
@@ -427,3 +485,72 @@ export function buildItemListJsonLd(
     })),
   };
 }
+
+// ─── Venue + category listing meta descriptions ───────────────────────────────
+// Ahrefs Site Audit ("Meta description too short",
+// c64d5156-d0f4-11e7-8ed1-001e67ed4656) flagged 53 indexable pages: 38
+// /venues/<slug>, 13 /categories/<slug>, plus the /venues and /categories hubs.
+//
+// Root cause was a one-line template, not missing content:
+//   `Upcoming events at ${venue.name} in ${venue.city}, Bergen County, NJ.`
+// tops out at 83 characters even for the longest venue name — every generated
+// page was structurally incapable of clearing the 110-char floor. Same for
+// `Find the best ${category} events happening in Bergen County, NJ.` (max 89).
+//
+// So the fix belongs in the generator. Both helpers below add real, useful
+// detail (what's on, how to browse it) rather than padding, and shed clauses
+// from a candidate ladder — the same approach buildEventDescription already uses
+// — so a long venue or category name degrades gracefully instead of overflowing
+// the 160-char ceiling. Verified in range for every current venue/category.
+
+const LISTING_MIN = 110;
+const LISTING_MAX = 160;
+
+/** First candidate that fits the ceiling; falls back to the shortest. */
+function firstFitting(candidates: string[]): string {
+  return candidates.find((c) => c.length <= LISTING_MAX) ?? candidates[candidates.length - 1];
+}
+
+export interface VenueDescriptionInput {
+  name: string;
+  city?: string | null;
+  /** Upcoming published events; pluralised, and omitted entirely when 0. */
+  upcomingCount?: number;
+}
+
+export function buildVenueDescription(venue: VenueDescriptionInput): string {
+  const name = venue.name.trim();
+  const city = venue.city?.trim();
+  // "The Hermitage in Ho-Ho-Kus" — skip the city when the name already says it
+  // (venue "Teaneck Armory" in city "Teaneck" would otherwise stutter).
+  const where = city && !name.toLowerCase().includes(city.toLowerCase())
+    ? `${name} in ${city}`
+    : name;
+
+  const count = venue.upcomingCount ?? 0;
+  const lead = count > 0
+    ? `${count} upcoming event${count === 1 ? "" : "s"} at ${where}, Bergen County, NJ.`
+    : `Upcoming events at ${where}, Bergen County, NJ.`;
+
+  return firstFitting([
+    `${lead} Browse dates, lineups, ticket links and directions on Bergen Beat.`,
+    `${lead} Browse dates, tickets and directions on Bergen Beat.`,
+    `${lead} Browse dates and tickets on Bergen Beat.`,
+  ]);
+}
+
+export function buildCategoryDescription(categoryName: string): string {
+  const label = categoryName.trim().toLowerCase();
+  const lead = `Find the best ${label} events in Bergen County, NJ.`;
+  const browse = `Browse upcoming ${label} events by date, town and venue`;
+
+  return firstFitting([
+    `${lead} ${browse}, with tickets and details on Bergen Beat.`,
+    `${lead} ${browse}, with tickets on Bergen Beat.`,
+    `${lead} ${browse}.`,
+    `${lead} Browse dates, venues and tickets on Bergen Beat.`,
+  ]);
+}
+
+/** Exported for the meta-description length test. */
+export const LISTING_DESCRIPTION_BOUNDS = { min: LISTING_MIN, max: LISTING_MAX };

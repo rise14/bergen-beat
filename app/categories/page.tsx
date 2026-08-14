@@ -4,14 +4,20 @@ import { buildOpenGraph, canonicalSiteUrl } from "@/lib/seo";
 
 const siteUrl = canonicalSiteUrl;
 
+const CATEGORIES_DESCRIPTION =
+  "Find events in Bergen County, NJ by category \u2014 music, comedy, food, arts, sports, wellness and kids. Browse upcoming picks by date and venue on Bergen Beat.";
+
 export const metadata: Metadata = {
   title: "Browse by Category",
-  description: "Find events in Bergen County, NJ by category — music, food, arts, sports, kids, and more.",
+  // 89 chars — under Ahrefs' 110-char floor ("Meta description too short",
+  // c64d5156-d0f4-11e7-8ed1-001e67ed4656). Names the actual categories rather
+  // than trailing off at "and more".
+  description: CATEGORIES_DESCRIPTION,
   alternates: { canonical: `${siteUrl}/categories` },
   openGraph: buildOpenGraph({
     url: `${siteUrl}/categories`,
     title: "Browse Events by Category in Bergen County, NJ",
-    description: "Find events in Bergen County, NJ by category — music, food, arts, sports, kids, and more.",
+    description: CATEGORIES_DESCRIPTION,
   }),
 };
 
