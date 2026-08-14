@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getEventBySlug, getEventBySlugAdmin, getRelatedEvents } from "@/lib/events";
+import { getEventBySlug, getEventBySlugAdmin, getRelatedEvents, isHiddenFromListings } from "@/lib/events";
 import { buildOpenGraph, canonicalSiteUrl, buildEventJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
@@ -28,10 +28,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const siteUrl = canonicalSiteUrl;
   const canonicalUrl = `${siteUrl}/events/${event.slug}`;
 
+  // Past events are no longer linked from anywhere on the site (see
+  // isHiddenFromListings) but stay published for 7 days so existing links keep
+  // working. Serving them as indexable made them orphan pages in Ahrefs Site
+  // Audit, so tell crawlers not to index them — `follow: true` keeps the links
+  // on the page crawlable so equity still flows to the venue/category pages.
+  const hidden = isHiddenFromListings(event);
+
   return {
     title: event.title,
     description: event.short_description ?? event.description?.slice(0, 155),
     alternates: { canonical: canonicalUrl },
+    ...(hidden ? { robots: { index: false, follow: true } } : {}),
     openGraph: buildOpenGraph({
       type: "article",
       title: event.title,

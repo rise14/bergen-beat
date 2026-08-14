@@ -4,6 +4,33 @@ import { haversineDistance, withinBoundingBox, DEFAULT_RADIUS_MILES } from "./ge
 
 export const PAGE_SIZE = 24;
 
+// ─── Listing visibility ───────────────────────────────────────────────────────
+// Every public listing query below filters `.gte("start_date", now)`:
+// getPublishedEvents, getFeaturedEvents, getUpcomingEvents, getTrendingEvents,
+// getRelatedEvents and getVenueEvents (lib/venues.ts). The moment an event's
+// start date passes it disappears from every grid, related-events block and
+// venue page — so NOTHING on the site links to it any more.
+//
+// Its `status` stays "published" for 7 more days though (app/api/cron/expire
+// archives on a 7-day cutoff), which keeps the detail page live for anyone
+// holding the link (newsletter, share, calendar invite). That's deliberate.
+//
+// What is NOT deliberate is that such a page stayed indexable and sitemap-
+// advertised while being link-unreachable — Ahrefs Site Audit flagged 431 of
+// them as "Orphan page (has no incoming internal links)" (Critical).
+//
+// This predicate is the single source of truth for "hidden from listings", so
+// the noindex rule and the sitemap window can't drift from the query filter.
+// Note it keys off start_date, NOT the effective end date: the listing filter
+// is on start_date, so a multi-day event that began yesterday is already gone
+// from the listings even though it is still running.
+export function isHiddenFromListings(
+  event: Pick<Event, "start_date">,
+  now: Date = new Date()
+): boolean {
+  return new Date(event.start_date) < now;
+}
+
 // Fields to select for event cards (list views)
 const EVENT_CARD_SELECT = `
   id, title, slug, short_description, start_date, end_date,
