@@ -627,3 +627,173 @@ export function buildTownDescription(town: TownDescriptionInput): string {
 
 /** Exported for the meta-description length test. */
 export const LISTING_DESCRIPTION_BOUNDS = { min: LISTING_MIN, max: LISTING_MAX };
+
+// ---------------------------------------------------------------------------
+// Title lengths
+// ---------------------------------------------------------------------------
+//
+// Ahrefs "Title too long" (c64dac3a-d0f4-11e7-8ed1-001e67ed4656) fires on
+// `titlesLength > 70`, and that length includes the suffix that
+// app/layout.tsx's `template: "%s | Bergen Beat"` appends to every child
+// route's title. The suffix costs 14 characters, so what a page passes as
+// `title` has a 56-character budget — every `Metadata.title` in the app is a
+// *page-specific part*, never the finished tag.
+//
+// Descriptions have had length discipline since the "too long"/"too short"
+// fixes (clampToMax, the firstFitting ladders). Titles were the one tag left
+// unguarded, which is why 8 indexable pages shipped at 71–96 chars.
+//
+// The sister issue "Title too short" is `titlesLength < 15` — i.e. a
+// page-specific part of 1 character still clears it once the suffix lands, so
+// trimming here cannot trade one warning for the other. Nothing below emits an
+// empty title.
+
+/** Cost of the `" | Bergen Beat"` suffix from app/layout.tsx's title template. */
+export const TITLE_SUFFIX_LENGTH = " | Bergen Beat".length;
+
+/** Ahrefs flags `> 70`; 70 total is the inclusive ceiling. */
+const TITLE_TOTAL_MAX = 70;
+
+/** Room left for a child route's own title once the suffix is appended. */
+export const TITLE_PART_MAX = TITLE_TOTAL_MAX - TITLE_SUFFIX_LENGTH; // 56
+
+/**
+ * First candidate that fits the title budget; falls back to clamping the last
+ * (assumed shortest) one. Mirrors firstFitting() for descriptions, but the
+ * fallback trims instead of overflowing — a title ladder's last rung is a
+ * hand-written string, so if even that is too long the page is better served by
+ * a word-boundary cut than by a fresh Ahrefs warning.
+ */
+function firstFittingTitle(candidates: string[]): string {
+  const fits = candidates.find((c) => c.trim().length <= TITLE_PART_MAX);
+  return fits ? fits.trim() : clampTitle(candidates[candidates.length - 1]);
+}
+
+/**
+ * Trim a title to the page-part budget at a word boundary.
+ *
+ * Same shape as clampToMax() for descriptions: back up to the last space,
+ * strip trailing punctuation so we never emit ",…", then mark the elision.
+ * Text already within budget is returned untouched — this never pads, rewords
+ * or invents. A single word longer than the budget is cut mid-word (no boundary
+ * to find), which is the one unavoidable hard cut.
+ */
+export function clampTitle(text: string, maxLength: number = TITLE_PART_MAX): string {
+  const title = text.trim();
+  if (title.length <= maxLength) return title;
+
+  const clipped = title.slice(0, maxLength - 1); // room for the ellipsis
+  const lastSpace = clipped.lastIndexOf(" ");
+  const cut = lastSpace > 0 ? clipped.slice(0, lastSpace) : clipped;
+
+  return `${cut.replace(/[\s,;:.!?\-–—/(]+$/, "")}\u2026`;
+}
+
+export interface EventTitleInput {
+  title: string;
+  venue?: { name: string; city?: string | null } | null;
+}
+
+/**
+ * Build the `/events/<slug>` title part from the event's own title.
+ *
+ * Importer feed titles routinely embed the venue and town the event page
+ * already states in its H1, breadcrumb and JSON-LD — "Beginner Pickleball
+ * Clinics for Kids Ages 6-8 at Montclair Pickleball in Fair Lawn" is 82
+ * characters of which the last 26 are redundant. So shed those trailing
+ * clauses first and only ellipsis-trim what's left; a naive clamp would spend
+ * the budget on boilerplate and cut the distinguishing part ("Ages 6-8")
+ * instead.
+ *
+ * Deliberately NOT fixed in the importers: `event.title` is also rendered as
+ * the H1, the OG image caption (app/events/[slug]/opengraph-image.tsx), the
+ * JSON-LD `name`, and the newsletter subject lines (lib/email.ts), where the
+ * full feed string is correct. Only the <title> tag has a 70-char ceiling.
+ */
+export function buildEventTitle(event: EventTitleInput): string {
+  const full = event.title.trim();
+  const venueName = event.venue?.name?.trim() || null;
+  const city = event.venue?.city?.trim() || null;
+
+  const candidates = [full];
+
+  // Drop a trailing " in <city>" the feed appended, then additionally a
+  // trailing " at <venue>" — only when they're genuinely at the end, so we
+  // never punch a hole in the middle of a title like "Live at the Hermitage:
+  // Summer Series".
+  const shed = (text: string, clause: string): string | null => {
+    for (const prep of [" in ", " at ", " - ", ", "]) {
+      const tail = `${prep}${clause}`;
+      if (text.toLowerCase().endsWith(tail.toLowerCase())) {
+        return text.slice(0, text.length - tail.length).replace(/[\s,;:\-–—]+$/, "");
+      }
+    }
+    return null;
+  };
+
+  let working = full;
+  for (const clause of [city, venueName]) {
+    if (!clause) continue;
+    const shorter = shed(working, clause);
+    // Never shed down to nothing — a title that IS just its venue name
+    // ("Montclair Pickleball") must survive intact.
+    if (shorter && shorter.length > 0) {
+      working = shorter;
+      candidates.push(working);
+    }
+  }
+
+  return firstFittingTitle(candidates);
+}
+
+export interface VenueTitleInput {
+  name: string;
+  city?: string | null;
+}
+
+/**
+ * Build the `/venues/<slug>` title part.
+ *
+ * The previous inline `venue.city ? \`${name}, ${city}\` : name` stuttered
+ * whenever the venue name already ended in its own city — "Williams Center -
+ * Cinema Underground - Rutherford" in city "Rutherford" became "… -
+ * Rutherford, Rutherford" (75 chars with the suffix). buildVenueDescription
+ * has guarded against exactly this since the description fixes; the title
+ * simply never reused the check.
+ */
+export function buildVenueTitle(venue: VenueTitleInput): string {
+  const name = venue.name.trim();
+  const city = venue.city?.trim();
+
+  const withCity = city && !name.toLowerCase().includes(city.toLowerCase())
+    ? `${name}, ${city}`
+    : name;
+
+  // Shed the city before trimming the venue's actual name.
+  return firstFittingTitle([withCity, name]);
+}
+
+/**
+ * Build the `/this-weekend` title part.
+ *
+ * Evergreen by design. The old title interpolated the live weekend range
+ * ("— Fri, August 14 – Sun, August 16"), so the finished tag ran 69–83 chars
+ * across the year: the page entered and left "Title too long" depending on how
+ * long the current month's name is, and was caught at 77. Nobody searches the
+ * literal dates, so they stay in the H1 / OG title / page copy where they're
+ * useful and the tag keeps the phrases people do search.
+ *
+ * Built as a ladder rather than a constant so the budget is enforced rather
+ * than assumed — the first rung ("… — Events & Things to Do") is 57 chars,
+ * which is 71 with the suffix and would still trip the >70 filter by one
+ * character. The ladder therefore lands on the 48-char rung today, and edits to
+ * this copy can't silently reintroduce the warning.
+ */
+export function buildWeekendTitle(): string {
+  return firstFittingTitle([
+    "This Weekend in Bergen County, NJ — Events & Things to Do",
+    "This Weekend in Bergen County, NJ — Things to Do",
+    "This Weekend in Bergen County, NJ",
+  ]);
+}
+

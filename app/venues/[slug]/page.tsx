@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getVenueBySlug, getVenueEvents, getActiveVenueSlugs } from "@/lib/venues";
-import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd, buildVenueDescription } from "@/lib/seo";
+import { buildOpenGraph, canonicalSiteUrl, buildBreadcrumbJsonLd, buildPlaceJsonLd, buildItemListJsonLd, buildVenueDescription, buildVenueTitle } from "@/lib/seo";
 import { EventGrid } from "@/components/EventGrid";
 import { EventMap } from "@/components/EventMap";
 
@@ -22,7 +22,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const venue = await getVenueBySlug(params.slug);
   if (!venue) return {};
 
-  const title = venue.city ? `${venue.name}, ${venue.city}` : venue.name;
+  // The inline `${name}, ${city}` this replaced stuttered when the venue name
+  // already ended in its own city ("Williams Center - Cinema Underground -
+  // Rutherford, Rutherford" — 75 chars with layout.tsx's suffix, flagged by
+  // Ahrefs "Title too long", c64dac3a-d0f4-11e7-8ed1-001e67ed4656).
+  // buildVenueTitle reuses the containment guard buildVenueDescription has.
+  const title = buildVenueTitle(venue);
   // Was a single 52–83 char sentence — structurally too short to clear Ahrefs'
   // 110-char floor on any venue ("Meta description too short",
   // c64d5156-d0f4-11e7-8ed1-001e67ed4656). buildVenueDescription composes the
