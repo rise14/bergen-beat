@@ -65,6 +65,10 @@ Both are fixed by one edge rule, still **not applied** as of this triage.
 
 ## Fix (P1) — Cloudflare Redirect Rule · manual, dashboard or API
 
+This step is **dashboard-only in this workspace**: the available Cloudflare connectors cover DNS
+records, zones and registrar — there is no Rulesets/Redirect-Rules connector, so the rule cannot
+be created through the API from here.
+
 **Cloudflare dashboard → `bergenbeat.net` → Rules → Redirect Rules → Create rule**
 
 | Field | Value |
@@ -79,6 +83,10 @@ Both are fixed by one edge rule, still **not applied** as of this triage.
 - Match on `http.host` only — **no scheme condition**. The rule must fire for both `http://` and
   `https://` apex requests; that is what removes the second hop.
 - Requires the apex `bergenbeat.net` DNS record to be **proxied** (orange cloud).
+  **Verified 2026-08-14 via the Cloudflare API**: zone `bergenbeat.net`
+  (`86768cc3180eebe5a8e05521c7532ae2`, status `active`, not paused) has apex
+  `A 76.76.21.21` with `proxied: true`. The prerequisite is already met — the rule will run
+  as soon as it is created. No DNS change is needed.
 - Do **not** add a matching `www → apex` rule. Combined with this rule or with the
   `next.config.js` backstop it is an infinite redirect loop.
 
