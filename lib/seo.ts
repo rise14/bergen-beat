@@ -120,6 +120,21 @@ const DESCRIPTION_MAX = 155;
 const DESCRIPTION_MIN = 110;
 const DESCRIPTION_BOILERPLATE =
   "Find event details, times, and directions on Bergen Beat.";
+// A second, shorter boilerplate rung.
+//
+// Ahrefs re-flagged 16 /events/ pages at 98-99 characters (non-indexable
+// 8d785026-001c-11e8-aa34-001e67ed4656 / indexable c64d5156-…) AFTER the floor
+// above was introduced. Cause: the clause-shedding ladder in
+// buildEventDescription only knew about the 155 ceiling, never the 110 floor.
+// A typical Broadway listing composes to 156-157 chars with the full
+// boilerplate — one or two over — so the ladder shed the whole 57-char clause
+// and returned the bare 98-99 char sentence, landing 11 chars UNDER the floor.
+// There was no rung in between.
+//
+// This is that rung: same facts, 13 fewer characters, so a listing that
+// narrowly overflows degrades to ~143 instead of falling off the cliff.
+const DESCRIPTION_BOILERPLATE_COMPACT =
+  "Event details and directions on Bergen Beat.";
 
 export interface EventDescriptionInput {
   title: string;
@@ -169,18 +184,31 @@ export function buildEventDescription(
       ? `Tickets ${event.price_range}.`
       : null;
 
-  const assemble = (withPrice: boolean, withBoilerplate: boolean): string =>
+  const assemble = (withPrice: boolean, boilerplate: string | null): string =>
     [
       `${lead}${dateClause}.`,
       ...(withPrice && priceClause ? [priceClause] : []),
-      ...(withBoilerplate ? [DESCRIPTION_BOILERPLATE] : []),
+      ...(boilerplate ? [boilerplate] : []),
     ].join(" ");
 
   // Shed the least valuable clauses first (boilerplate, then price) so a long
   // title never costs us the date. Naively clamping the whole string used to cut
   // mid-date ("… on Friday…"), losing the one detail that makes each of these
   // descriptions unique.
-  for (const candidate of [assemble(true, true), assemble(true, false), assemble(false, false)]) {
+  //
+  // The compact-boilerplate rung sits between the full one and dropping
+  // boilerplate altogether: without it, a 156-char candidate (one char over the
+  // ceiling) fell all the way to 98 — under Ahrefs' 110 floor. Ceiling and floor
+  // are both constraints, so prefer the longest candidate that fits rather than
+  // the first one that merely fits.
+  const ladder = [
+    assemble(true, DESCRIPTION_BOILERPLATE),
+    assemble(true, DESCRIPTION_BOILERPLATE_COMPACT),
+    assemble(true, null),
+    assemble(false, null),
+  ];
+
+  for (const candidate of ladder) {
     if (candidate.length <= maxLength) return candidate;
   }
 
@@ -236,6 +264,13 @@ export function resolveEventDescription(
   const long = event.description?.trim();
   if (long) return padToMinimum(clampToMax(long), event);
 
+  // Both columns NULL — the composed sentence IS the description, so there's no
+  // existing copy for padToMinimum to extend. This branch is what the 16 pages
+  // re-flagged as "too short" actually hit: save.ts backfills short_description
+  // at *import* time, so rows imported before PR #16 still have NULL in both
+  // columns and land here. Its length therefore depends entirely on
+  // buildEventDescription's ladder clearing DESCRIPTION_MIN — which is the rung
+  // added above, not something this branch can paper over.
   return buildEventDescription(event);
 }
 
