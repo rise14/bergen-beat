@@ -184,3 +184,35 @@ facts, so it stays best-effort — same stance as the synthetic edge cases above
 - **Don't pad with filler adjectives** to clear the floor. Every clause is a real column.
 - **Don't add a rung by trimming the date or venue** — those are the only things making these
   near-identical Broadway listings distinct from each other.
+
+## Third pass (2026-08-14, after PR #22)
+
+PR #22's compact-boilerplate rung fixed the 16 composed-fallback pages, and a re-crawl
+confirmed all three `c64d5156-…` URLs now serve 143–144 chars. Re-triaging the same issue id
+against a 400-row `/events/` pull found **one** page still under the floor:
+
+| Page | Served | Len |
+|---|---|---|
+| `/events/zedd-in-the-park-nyc-2-day-ticket-08-14-08-15-valid-both-day-2026-08-14` | `RAIN OR SHINE EVENT - ALL ACTS SUBJECT TO CHANGE. Friday, August 14, 2026 at Randalls Island.` | 93 |
+
+This is the `padToMinimum()` path, not the ladder. The feed blurb is 48 chars; the composed
+suffix hit the ellipsis guard (the title is a 62-char ticket-code string), so `dateSuffix()`
+was substituted — and 48 + date + venue is still 17 under 110. `padToMinimum` had no rung
+after the suffix: it returned `combined` without re-checking it against `DESCRIPTION_MIN`.
+
+Fix: after the ceiling check, if `combined` is still under the floor, append the boilerplate
+(full rung first, compact second, whichever fits 155). Same clauses already used elsewhere —
+no new facts. That page now lands at 151.
+
+### Known residual — do not "fix" with filler
+
+A 2,592-combination sweep shows 0 over the ceiling and 175 under the floor, all of which
+require a *missing* input: no venue row (56), an unparseable `start_date` (103), or a
+1-character title (8). Only **8 of 1,260 realistic** combinations land short with real inputs,
+and they share one shape: short title + short venue + `is_free=false` with `price_range=NULL`,
+e.g. `Ragtime at Teaneck on Friday, August 14, 2026. Find event details, times, and directions
+on Bergen Beat.` (104). The full boilerplate is already present and there is no further real
+column to add — closing the last ~6 chars would require inventing a fact, so we accept the
+Notice. No page in the current crawl hits this; the real-world minimum was the 95-char Zedd
+page above. If it starts appearing, backfill `price_range` in the importers rather than
+padding here.
