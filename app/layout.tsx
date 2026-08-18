@@ -5,6 +5,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { GoogleTagManager, GoogleTagManagerNoscript } from "@/components/GoogleAnalytics";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { canonicalSiteUrl, buildOrganizationJsonLd } from "@/lib/seo";
 
 const lora = Lora({
@@ -109,6 +110,7 @@ export default function RootLayout({
           </div>
         </footer>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
